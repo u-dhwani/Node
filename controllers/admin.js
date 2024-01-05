@@ -14,6 +14,7 @@ exports.getAddProduct = (req,res,next) => {
 };
 exports.postAddProduct=(req,res,next)=>{
     const title = req.body.title;
+    // req.body property represents the data that is sent as the request body in an HTTP POST or PUT request
     const imageUrl = req.body.imageUrl;
     const price = req.body.price;
     const description = req.body.description;
@@ -30,7 +31,7 @@ exports.getEditProduct = (req, res, next) => {
     if (!editMode) {
       return res.redirect('/');
     }
-    const prodId = req.params.productId;
+    const prodId = req.params.productId;  // The params property of the req object is used to access route parameters
     Product.findById(prodId, product => {
       if (!product) {
         return res.redirect('/');
