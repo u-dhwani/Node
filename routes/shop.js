@@ -1,12 +1,14 @@
 const path=require('path');
 
 const express=require('express');
+const shopController = require('../controllers/shop');
+
 const router=express.Router();
 // const rootDir=require('../util/path');
 // const adminData=require('./admin');
 
-const productsController=require('../controllers/products');
-router.get('/',productsController.getProducts);
+// const productsController=require('../controllers/admin');
+// router.get('/',productsController.getProducts);
 
 // router.get('/', (req, res, next) => {
 //     // console.log(adminData.products);
@@ -24,5 +26,16 @@ router.get('/',productsController.getProducts);
 //         productCSS: true
 //       });
 // });
+
+router.get('/', shopController.getIndex);
+
+router.get('/products', shopController.getProducts);
+
+router.get('/cart', shopController.getCart);
+
+router.get('/orders', shopController.getOrders);
+
+router.get('/checkout', shopController.getCheckout);
+
 
 module.exports=router;
