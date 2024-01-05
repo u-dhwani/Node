@@ -7,7 +7,7 @@ const errorController = require('./controllers/error');
 
 
 const app = express();
-app.set('view engine','ejs');   //  template engine for Node.js that simplifies the process of writing HTML
+app.set('view engine','pug');   //  template engine for Node.js that simplifies the process of writing HTML
 app.set('views','views');
 
 //const adminData=require('./routes/admin');
