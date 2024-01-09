@@ -147,10 +147,13 @@ app.get("/users/dashboard", checkNotAuthenticated, (req, res) => {
 });
 
 app.get('/users/logout', (req, res) => {
-  req.logout();
-  res.redirect('/users/login');
-//  req.flash("success_msg","You have logged out");
-   res.render("index", { message: "You have logged out successfully" });
+  req.logout((err)=>{
+      if(err) return next(err);
+      res.redirect('/users/login');
+      //  req.flash("success_msg","You have logged out");
+         res.render("index", { message: "You have logged out successfully" });
+  });
+  
    
 });
 
@@ -245,4 +248,4 @@ function checkNotAuthenticated(req, res, next) {
 
 
 
-app.listen(3003);
+app.listen(3004);
