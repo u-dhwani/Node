@@ -1,95 +1,3 @@
-// const express=require('express');
-// const app=express();
-// const {pool}=require("./dbConfig");
-// const bcrypt=require('bcrypt');
-// const session=require('express-session');
-// const flash=require('express-flash');
-
-// app.set("view engine","ejs");
-// app.use(express.urlencoded({extended:false}));
-// app.get('/',(req,res)=>{
-//     res.render("index");
-// });
-
-// app.use(session({
-//     secret:'secret',
-//     resave:false,
-//     saveUninitialized:false
-// }));
-
-// app.use(flash());
-
-
-// app.get('/users/register',(req,res)=>{
-//     res.render("register");
-// });
-
-// app.get('/users/login',(req,res)=>{
-//     res.render("login");
-// });
-
-// app.get('/users/dashboard',(req,res)=>{
-//     res.render("dashboard",{user:"Dhwani"});
-// });
-// app.post('/users/register',async(req,res)=>{
-//     let{name,email,password,password2}=req.body;
-//     console.log({
-//         name,
-//         email,
-//         password,
-//         password2
-//     });
-    
-//     let errors=[];
-//     if(!name || !email || !password || !password2){
-//         errors.push({message:"Please enter all fields"});
-//     }
-
-//     if(password.length<6){
-//         errors.push({message:"Password should be atleast 6 characters"});
-//     }
-
-//     if(password!=password2){
-//         errors.push({message:"Password do not match"});
-//     }
-
-//     if(errors.length>0){
-//         res.render("register",{errors});
-//     }
-//     else{
-//         let hashedPassword=await bcrypt.hash(password,10);
-//         // The higher the number, the more secure but slower the hashing process
-//         console.log(hashedPassword);
-
-//         pool.query(
-//             'select * from users where email=$1',[email],(err,results) => {
-//                 if(err){
-//                     throw err;
-//                 }
-//                 console.log(results.rows);
-//                 if(results.rows.length>0){
-//                     errors.push({message:"Email already registered"});
-//                     res.render('register',{errors});
-//                 }
-//                 else{
-
-//                     pool.query(
-//                         'insert into users (name,email,password) values ($1,$2,$3) returning id, password',
-//                         [name,email,hashedPassword],(err,results) =>{
-//                             if(err){
-//                                 throw err;
-//                             }
-//                             console.log(results.rows);
-//                             req.flash('success_msg',"You are now registered. Please log in ");
-//                             res.redirect('/users/login');
-//                         }
-//                     );
-//                 }
-//             }
-//         );
-//     }
-// });
-
 const express = require("express");
 const { pool } = require("./dbConfig");
 const bcrypt = require("bcrypt");
@@ -98,8 +6,6 @@ const flash = require("express-flash");
 const session = require("express-session");
 require("dotenv").config();
 const app = express();
-
-const PORT = process.env.PORT || 3000;
 
 const initializePassport = require("./passportConfig");
 
@@ -147,12 +53,13 @@ app.get("/users/dashboard", checkNotAuthenticated, (req, res) => {
 });
 
 app.get('/users/logout', (req, res) => {
-  req.logout((err)=>{
+  req.logOut((err)=>{
       if(err) return next(err);
-      res.redirect('/users/login');
-      //  req.flash("success_msg","You have logged out");
-         res.render("index", { message: "You have logged out successfully" });
-  });
+      
+        req.flash("success_msg","You have logged out");
+        // res.render("index", { message: "You have logged out successfully" });
+        res.redirect('/users/login');
+      });
   
    
 });
