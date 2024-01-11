@@ -9,6 +9,7 @@ app.use(express.json());
 
 app.use('/user', require("./routes/users"))
 app.use('/products',require("./routes/products"))
+app.use('/cart',require("./routes/cart"))
 
 
 app.listen(3006);

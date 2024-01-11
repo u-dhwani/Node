@@ -1,7 +1,7 @@
 const JWT = require("jsonwebtoken")
 const product_query=require('../queries/products');
 const { pool } = require("../dbConfig");
-
+const authorize=("../middleware/checkAuth");
 
 const getAllProducts=(req,res)=>{
     pool.query(product_query.getAllProducts,(error,results)=>{
@@ -29,6 +29,11 @@ const addProducts=async(req,res)=>{
     const { product_name, description, brand, price, category, seller_id } = req.body;
 
     try {
+        const role_val=authorize.auth(token);
+        if (role_val.role !== 'admin') {
+            return res.status(403).json({ message: 'Forbidden: You do not have the necessary privileges.' });
+        }
+
         const existingProduct = await pool.query(product_query.existingProduct, [product_name, brand, seller_id]);
 
         if (existingProduct.rows.length > 0) {

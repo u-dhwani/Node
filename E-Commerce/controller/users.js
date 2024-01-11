@@ -72,7 +72,7 @@ const loginUser=(req,res)=>{
               }
               if (isMatch) {
                // return res.send("login");
-               const token = JWT.sign({email}, "nfb32iur32ibfqfvi3vf932bg932g932", {expiresIn: 360000})
+               const token = JWT.sign({email,role:user.role}, "nfb32iur32ibfqfvi3vf932bg932g932", {expiresIn: 360000})
                console.log("Login successfully");
                res.json({
                    token

@@ -6,7 +6,6 @@ const user_query=require('../queries/users');
 const { pool } = require("../dbConfig");
 const controller_users=require('../controller/users');
 
-
 router.post('/signup',[check("email", "Please input a valid email")
 .isEmail(),
 check("password", "Please input a password with a min length of 6")
