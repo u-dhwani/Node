@@ -10,6 +10,7 @@ function initialize(passport) {
     console.log(email, password);
     pool.query(
       `SELECT * FROM users WHERE email = $1`,
+      
       [email],
       (err, results) => {
         if (err) {
