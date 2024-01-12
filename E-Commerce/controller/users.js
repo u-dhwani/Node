@@ -53,7 +53,7 @@ const signUpUser=async(req,res)=>{
 
 
 const loginUser=(req,res)=>{
-    const { email, password } = req.body
+    const { email, password ,role} = req.body;
     pool.query(
         user_query.checkEmailExists,
         [email],
@@ -62,7 +62,6 @@ const loginUser=(req,res)=>{
             throw err;
           }
           console.log(results.rows);
-  
           if (results.rows.length > 0) {
             const user = results.rows[0];
   
@@ -70,16 +69,20 @@ const loginUser=(req,res)=>{
               if (err) {
                 throw err;
               }
-              if (isMatch) {
-               // return res.send("login");
+              if (isMatch && user.role=== role) {
                const token = JWT.sign({email,role:user.role}, "nfb32iur32ibfqfvi3vf932bg932g932", {expiresIn: 360000})
                console.log("Login successfully");
+              // res.setHeader("User-Token",token);
                res.json({
                    token
                })
                
                
-              } else {
+              } 
+              else if(user.role!==role){
+                return res.send("Your role is incorrect")
+              }
+              else {
                 //password is incorrect
                 return res.send("Password is incorrect" );
               }

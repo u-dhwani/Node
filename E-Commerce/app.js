@@ -1,5 +1,6 @@
 const express = require("express")
 const { pool } = require("./dbConfig");
+const router = require("./routes/cart");
 const app = express();
 // app.use(bodyParser.json());
 
@@ -10,6 +11,7 @@ app.use(express.json());
 app.use('/user', require("./routes/users"))
 app.use('/products',require("./routes/products"))
 app.use('/cart',require("./routes/cart"))
+app.use('/order',require("./routes/order"))
 
 
 app.listen(3006);

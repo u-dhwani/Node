@@ -1,39 +1,68 @@
 const JWT = require("jsonwebtoken")
 const product_query=require('../queries/products');
 const { pool } = require("../dbConfig");
-const authorize=("../middleware/checkAuth");
 
-const getAllProducts=(req,res)=>{
-    pool.query(product_query.getAllProducts,(error,results)=>{
-        if(error)   throw error;
-        res.status(200).json(results.rows); // OK STATUS
-    });
-}
 
-const deleteProduct=(req,res)=>{
-    const prod_id=parseInt(req.params.id);
-    console.log(prod_id);
-    pool.query(product_query.getProductById,[prod_id],(error,results)=>{
-        const noProductFound=!results.rows.length;
-        if(noProductFound){
-            return res.send("Product does not exist in the database");
-        }
-        pool.query(product_query.deleteProduct,[prod_id],(error,results)=>{
-            if(error) throw error;
-            res.status(200).send("Product removed Successfully!!!");
-        })
-    });
+const getAllProducts = (req, res) => {
+    try {
+        pool.query(product_query.getAllProducts, (error, results) => {
+            if (error) {
+                console.error('Error retrieving all products:', error);
+                return res.status(500).send("Internal Server Error");
+            }
+
+            res.status(200).json(results.rows); // OK status
+        });
+    } catch (catchError) {
+        console.error('Error in getAllProducts:', catchError);
+        res.status(500).send("Internal Server Error");
+    }
 };
 
-const addProducts=async(req,res)=>{
-    const { product_name, description, brand, price, category, seller_id } = req.body;
+
+
+const deleteProduct = (req, res) => {
+    const prod_id = parseInt(req.params.id);
+    console.log(prod_id);
 
     try {
-        const role_val=authorize.auth(token);
-        if (role_val.role !== 'admin') {
-            return res.status(403).json({ message: 'Forbidden: You do not have the necessary privileges.' });
-        }
+        pool.query(product_query.getProductById, [prod_id], (error, results) => {
+            if (error) {
+                console.error('Error checking if product exists:', error);
+                return res.status(500).send("Internal Server Error");
+            }
 
+            const noProductFound = !results.rows.length;
+            if (noProductFound) {
+                return res.status(404).send("Product does not exist in the database");
+            }
+
+            // Product exists, proceed to delete
+            pool.query(product_query.deleteProduct, [prod_id], (deleteError, deleteResults) => {
+                if (deleteError) {
+                    console.error('Error deleting product:', deleteError);
+                    return res.status(500).send("Internal Server Error");
+                }
+
+                res.status(200).send("Product removed Successfully!!!");
+            });
+        });
+    } catch (catchError) {
+        console.error('Error in deleteProduct:', catchError);
+        res.status(500).send("Internal Server Error");
+    }
+};
+
+
+const addProducts=async(req,res)=>{
+    const {product_name, description, brand, price, category, seller_id } = req.body;
+
+    try {
+       // const role_val=authorize.auth(token);
+        // if (role_val.role !== 'admin') {
+        //     return res.status(403).json({ message: 'Forbidden: You do not have the necessary privileges.' });
+        // }
+    //    if(!role_val)   return res.send("You are not an admin");   
         const existingProduct = await pool.query(product_query.existingProduct, [product_name, brand, seller_id]);
 
         if (existingProduct.rows.length > 0) {

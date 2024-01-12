@@ -1,9 +1,10 @@
 const jwt = require("jsonwebtoken");
-const auth=async(token,res)=>{
-  //  const {token}=req.body;
+const auth=(req,res,next)=>{
+    const {token}=req.body;
     const user = jwt.verify(token, "nfb32iur32ibfqfvi3vf932bg932g932");
     req.userRole=user.role;
-    return res.send(req.userRole);
+    if(user.role!="admin")  return res.send('Forbidden: You do not have the necessary privileges.');
+    next();
 }
 module.exports = async (req, res, next) => {
     const token = req.header('x-auth-token')
