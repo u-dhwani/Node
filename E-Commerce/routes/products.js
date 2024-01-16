@@ -6,7 +6,7 @@ const controller_products=require('../controller/products');
 
 
 
-router.post('/add',authorize.auth,controller_products.addProducts);    // done
+router.post('/add',controller_products.addProducts);    // done
 router.get('/all',controller_products.getAllProducts);  // done
 router.get('/:id',controller_products.getProductById);  // done
 router.get('/category/:category',controller_products.getProductByCategory); // done

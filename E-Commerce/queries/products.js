@@ -6,7 +6,7 @@ const deleteProduct="delete from products where prod_id=$1";
 const updateProductsByQuantity="update seller set quantity=$1 where seller_id=$2 and prod_id=$3";
 const finalPrice="SELECT p.price * ((100 - s.discount_percentage) / 100) AS final_amount, p.price as initial_amount FROM products p NATURAL JOIN seller s WHERE p.prod_id = $1";
 const existingProduct="SELECT * FROM products WHERE product_name = $1 AND seller_id = $3 AND brand = $2";
-
+const checkUserIsSeller="select * from users where user_id=$1 and role='admin'";
 
 module.exports={
     addProducts,
@@ -16,6 +16,7 @@ module.exports={
     deleteProduct,
     updateProductsByQuantity,
     finalPrice,
-    existingProduct
+    existingProduct,
+    checkUserIsSeller
 
 }

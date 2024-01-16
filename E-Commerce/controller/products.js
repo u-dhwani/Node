@@ -55,14 +55,17 @@ const deleteProduct = (req, res) => {
 
 
 const addProducts=async(req,res)=>{
-    const {product_name, description, brand, price, category, seller_id } = req.body;
+    const {token,product_name, description, brand, price, category, seller_id } = req.body;
+    console.log(token,product_name, description, brand, price, category, seller_id );
 
     try {
-       // const role_val=authorize.auth(token);
-        // if (role_val.role !== 'admin') {
-        //     return res.status(403).json({ message: 'Forbidden: You do not have the necessary privileges.' });
-        // }
-    //    if(!role_val)   return res.send("You are not an admin");   
+        const { email,getUser } = JWT.verify(token, 'nfb32iur32ibfqfvi3vf932bg932g932');
+      //  console.log(user_id);
+        console.log(email);
+        const user_seller=pool.query(product_query.checkUserIsSeller,[getUser]);
+        if((await user_seller).rows.length==0){
+            return res.status(409).json({message:'You are not an admin'});
+        }
         const existingProduct = await pool.query(product_query.existingProduct, [product_name, brand, seller_id]);
 
         if (existingProduct.rows.length > 0) {
