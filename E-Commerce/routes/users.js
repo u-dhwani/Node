@@ -1,21 +1,14 @@
 const router = require("express").Router();
-const { check, validationResult } = require("express-validator");
 const JWT = require("jsonwebtoken")
-const Joi = require("joi");
-const bcrypt = require('bcrypt');
-const user_query=require('../queries/users');
-const { pool } = require("../dbConfig");
 const controller_users=require('../controller/users');
+const validation = require('../validations/users');
+const auth=require('../middleware/checkAuth');
 
-router.post('/signup',[check("email", "Please input a valid email")
-.isEmail(),
-check("password", "Please input a password with a min length of 6")
-.isLength({min: 6})],controller_users.signUpUser);
 
+router.post('/signup', validation.handleSignup,controller_users.signUpUser);
 router.post('/login',controller_users.loginUser);
-router.get('/all',controller_users.getAllUsers);
-
-router.delete('/delete',controller_users.deleteByEmail);
-router.put('/update',controller_users.updateUserByEmail);
+router.get('/all',auth.verify_token,auth.role_access('admin'),controller_users.getAllUsers);
+router.delete('/delete',auth.verify_token,auth.role_access('admin'),controller_users.deleteByEmail);
+router.put('/update',auth.verify_token,auth.role_access('user'),controller_users.updateAddressOfUserByEmail);
 
 module.exports = router;

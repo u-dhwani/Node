@@ -1,44 +1,52 @@
 const jwt = require("jsonwebtoken");
-const auth=(req,res,next)=>{
-    const {token}=req.body;
-    console.log(token);
-    const user = jwt.verify(token, "nfb32iur32ibfqfvi3vf932bg932g932");
-    req.userRole=user.role;
-    console.log(user.Role);
-    if(user.role!="admin")  return res.send('Forbidden: You do not have the necessary privileges.');
-    next();
-}
-module.exports = async (req, res, next) => {
-    const token = req.header('x-auth-token')
+const user_query=require('../models/users');
 
-    // CHECK IF WE EVEN HAVE A TOKEN
-    if(!token){
-        res.status(401).json({
-            errors: [
-                {
-                    msg: "No token found"
-                }
-            ]
-        })
-    }
-
-    try {
-        const user = await jwt.verify(token, "nfb32iur32ibfqfvi3vf932bg932g932")
-        req.user = user.email;
-        req.userRole=user.role;
-        console.log(userRole);
+const verify_token=async(req,res,next)=>{
+    // verify token
+    const token= req.header('auth-token');
+    if(!token)
+        return res.status(400).send("Access Denied");
+    try{
+        const UserDetails=jwt.verify(token, 'nfb32iur32ibfqfvi3vf932bg932g932');
+        req.user_Id = UserDetails.user_Id; // Attach user_Id to the request object
+        req.email=UserDetails.email;
         next();
-    } catch (error) {
-        res.status(400).json({
-            errors: [
-                {
-                    msg: 'Invalid Token'
-                }
-            ]
-        })
     }
+    catch(err){
+        res.status(400).send("Invalid Token");
+    }
+    
 }
+
+
+const role_access = (requiredRole) => async (req, res, next) => {
+    try {
+      const user_id = req.user_Id;
+  
+      let isAuthorized = await user_query.checkUserRole(user_id, requiredRole);
+  
+      if (!isAuthorized) {
+        console.log("false");
+        return res.status(403).json({ message: `Access forbidden. User is not a ${requiredRole}.` });
+      }
+  
+      // If the user has the required role, proceed to the next middleware or route handler
+      return next();
+    } catch (error) {
+      console.error('Error in role access validation:', error);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  };
+
+
+
+
+
+
 
 module.exports={
-    auth,
+    role_access,
+    verify_token,
+ 
+
 }
