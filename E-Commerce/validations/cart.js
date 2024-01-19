@@ -16,7 +16,7 @@ const updateProductQuantitySchema = Joi.object({
 
 module.exports = {
  
-  updateProductQuantitySchema,
+  validateUpdateProductQuantity
   
   
 };

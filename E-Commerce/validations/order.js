@@ -11,9 +11,6 @@ const getOrderDetailsSchema = Joi.object({
     return value;
   };
   
-
-  
-
 module.exports = {
     validateGetOrderDetails,
  

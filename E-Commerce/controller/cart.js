@@ -8,7 +8,7 @@ const validate_product=require('../validations/products');
 
 
 const addProductsInCart=async(req,res)=>{
-    const{prod_id,quantity}=validate.updateProductQuantitySchema(req.body);
+    const{prod_id,quantity}=validate.validateUpdateProductQuantity(req.body);
     console.log(prod_id,quantity);
     try{
         const user_Id=req.user_Id;
@@ -86,7 +86,7 @@ const getAllProductsInCart = async (req, res) => {
 
 
 const updateByQuantity = async (req, res) => {
-    const{prod_id,quantity}=validate.updateProductQuantitySchema(req.body);
+    const{prod_id,quantity}=validate.validateUpdateProductQuantity(req.body);
     
     try {
         const user_Id=req.user_Id;
