@@ -21,7 +21,7 @@ class CartController {
             const validationResult = (0, cart_1.validateUpdateProductQuantity)(req.body);
             const { prod_id, quantity } = validationResult.value;
             try {
-                const user_Id = req.user_id;
+                const user_Id = req.user.user_id;
                 const user_found = yield cart_2.default.FindUserInCart(user_Id);
                 yield cart_2.default.createcartitem(user_Id, prod_id, quantity);
                 if (!user_found) {
@@ -90,8 +90,8 @@ class CartController {
             const validationResult = (0, cart_1.validateUpdateProductQuantity)(req.body);
             const { prod_id, quantity } = validationResult.value;
             try {
-                const user_Id = req.user_id;
-                yield cart_2.default.updateQuantity(quantity, user_Id, prod_id);
+                const user_Id = req.user.user_id;
+                const updateQuantityResult = yield cart_2.default.updateQuantity(quantity, user_Id, prod_id);
                 yield cart_2.default.updateCartAmount();
                 const page = Number(req.query.page) || 1;
                 const pageSize = 5;

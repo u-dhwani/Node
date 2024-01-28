@@ -1,5 +1,6 @@
 import { QueryResult } from 'pg';
-import pool  from '../dbConfig';
+import DbConnection,{Condition} from '../dbConfig';
+import {CartItem,Cart} from '../models/cart'
 
 interface OrderUser {
   order_id: number;
@@ -16,10 +17,23 @@ interface OrderItem {
   quantity: number;
 }
 
-class OrderModel {
+class OrderModel extends DbConnection<OrderItem| OrderUser|CartItem|Cart> {
+  private OrderItemModel: DbConnection<OrderItem>;
+  private CartItemModel:DbConnection<CartItem>;
+  private CartModel:DbConnection<Cart>;
+  constructor() {
+    super('order_user');
+    this.OrderItemModel = new DbConnection<OrderItem>('order_item');
+    this.CartItemModel = new DbConnection<CartItem>('cart_item');
+    this.CartModel=new DbConnection<Cart>('cart');
+  }
    async deleteInCartItem(userId: number): Promise<void> {
     try {
-      await pool.query('DELETE FROM cart_item WHERE user_id = $1', [userId]);
+      const conditions: Condition[] = [
+        { columnName: 'user_id', value: userId },];
+      const result=await this.CartItemModel.deleteRecord(conditions);
+     
+     // await this.pool.query('DELETE FROM cart_item WHERE user_id = $1', [userId]);
     } catch (error) {
       console.error('Error deleting from cart_item:', error);
       throw error;
@@ -28,7 +42,9 @@ class OrderModel {
 
    async updateCartAmount(userId: number): Promise<void> {
     try {
-      await pool.query('UPDATE cart SET amount = 0.0 WHERE user_id = $1', [userId]);
+      const result=await this.CartModel.updateRecord(['user_id'],[userId],{amount:0.0}); 
+     
+    //  await this.pool.query('UPDATE cart SET amount = 0.0 WHERE user_id = $1', [userId]);
     } catch (error) {
       console.error('Error updating cart amount:', error);
       throw error;
@@ -37,7 +53,7 @@ class OrderModel {
 
    async getCurrentOrderDetails(userId: number): Promise<OrderUser | null> {
     try {
-      const result: QueryResult<OrderUser> = await pool.query(
+      const result: QueryResult<OrderUser> = await this.pool.query(
         'SELECT * FROM order_user WHERE user_id = $1 ORDER BY order_date, curr_timestamp DESC',
         [userId]
       );
@@ -50,7 +66,7 @@ class OrderModel {
 
    async getAllOrderDetails(pageSize: number, offset: number): Promise<OrderUser[]> {
     try {
-      const result: QueryResult<OrderUser> = await pool.query(
+      const result: QueryResult<OrderUser> = await this.pool.query(
         'SELECT ou.order_id, ou.amount, SUM(oi.order_item_id) AS total_items, ou.order_date, ou.curr_timestamp ' +
           'FROM order_user ou ' +
           'JOIN order_item oi ON oi.order_item_id = ou.order_id ' +
@@ -72,7 +88,7 @@ class OrderModel {
   ): Promise<OrderUser[]> {
     try {
       console.log('user_id:', userId);
-      const result: QueryResult<OrderUser> = await pool.query(
+      const result: QueryResult<OrderUser> = await this.pool.query(
         'SELECT ou.order_id, SUM(oi.quantity) AS total_items, ou.amount, ou.order_date, ou.curr_timestamp ' +
           'FROM order_user ou ' +
           'JOIN order_item oi ON ou.order_id = oi.order_item_id ' +
@@ -90,7 +106,7 @@ class OrderModel {
 
    async deleteOrderFromOrderItem(orderId: number): Promise<void> {
     try {
-      await pool.query('DELETE FROM order_item WHERE order_item_id IN (SELECT order_id FROM order_user WHERE order_id = $1)', [
+      await this.pool.query('DELETE FROM order_item WHERE order_item_id IN (SELECT order_id FROM order_user WHERE order_id = $1)', [
         orderId,
       ]);
     } catch (error) {
@@ -99,9 +115,13 @@ class OrderModel {
     }
   }
 
-   async deleteOrderFromOrderUser(orderId: number): Promise<void> {
+   async deleteOrderFromOrderUser(orderId: number): Promise<any> {
     try {
-      await pool.query('DELETE FROM order_user WHERE order_id = $1', [orderId]);
+      const conditions: Condition[] = [
+        { columnName: 'order_id', value: orderId },];
+      const result=this.deleteRecord(conditions);
+     // await this.pool.query('DELETE FROM order_user WHERE order_id = $1', [orderId]);
+     return result;
     } catch (error) {
       console.error('Error deleting order:', error);
       throw error;
@@ -110,7 +130,7 @@ class OrderModel {
 
    async showAllOrder(): Promise<OrderUser[]> {
     try {
-      const result: QueryResult<OrderUser> = await pool.query('SELECT * FROM order_user');
+      const result: QueryResult<OrderUser> = await this.pool.query('SELECT * FROM order_user');
       return result.rows;
     } catch (error) {
       console.error('Error showing all orders:', error);
@@ -120,7 +140,7 @@ class OrderModel {
 
    async addressUser(userId: number): Promise<{ address: string } | null> {
     try {
-      const result: QueryResult<{ address: string }> = await pool.query('SELECT address FROM users WHERE user_id = $1', [
+      const result: QueryResult<{ address: string }> = await this.pool.query('SELECT address FROM users WHERE user_id = $1', [
         userId,
       ]);
       return result.rows[0] || null;
@@ -132,7 +152,7 @@ class OrderModel {
 
    async amountInCartOfUser(userId: number): Promise<{ amount: number } | null> {
     try {
-      const result: QueryResult<{ amount: number }> = await pool.query('SELECT amount FROM cart WHERE user_id = $1', [
+      const result: QueryResult<{ amount: number }> = await this.pool.query('SELECT amount FROM cart WHERE user_id = $1', [
         userId,
       ]);
       return result.rows[0] || null;
@@ -144,7 +164,7 @@ class OrderModel {
 
    async getDetailsOfParticularOrder(orderId: number): Promise<OrderItem[]> {
     try {
-      const result: QueryResult<OrderItem> = await pool.query(
+      const result: QueryResult<OrderItem> = await this.pool.query(
         'SELECT oi.prod_id, p.product_name, oi.quantity, p.price ' +
           'FROM order_item oi ' +
           'JOIN products p ON oi.prod_id = p.prod_id ' +
@@ -159,7 +179,7 @@ class OrderModel {
   }
 
   async insertIntoOrder(userId: number, address: string, amountuser: number): Promise<void> {
-    const client = await pool.connect();
+    const client = await this.pool.connect();
   
     try {
       await client.query('BEGIN'); // Start the transaction

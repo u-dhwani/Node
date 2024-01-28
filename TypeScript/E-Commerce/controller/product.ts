@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { paginate } from '../utils/pagination';
 import { TokenData } from '../utils/jwttoken';
-import ProductModel,{Product} from '../models/product';
+import ProductModel,{Product,Seller,PartialProduct} from '../models/product';
 //import validate from '../validations/product';
 import {
     validateProductId,
@@ -46,19 +46,18 @@ class ProductController{
         }
       }
     
-      async addProducts(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
+      async addProducts(req: Request, res: Response): Promise<Response> {
         const { product_name, description, brand, price, category, discount_percentage, quantity } =
           validateCreateProduct(req.body);
     
         try {
-            const seller_id = (req as any).user_id;
-          console.log(seller_id);
+            const seller_id = (req as any).user.user_id;
+          console.log("welcome:"+seller_id);
           const existingProduct = await ProductModel.existingProduct(product_name, brand, seller_id);
           if (existingProduct.length > 0) {
             return res.status(409).json({ message: 'Product already exists. Update the quantity.' });
           }
-    
-  
+
           const newProduct: Product = {
             product_name,
             description,
@@ -69,12 +68,13 @@ class ProductController{
             discount_percentage,
             quantity
           };
-
+          
           await ProductModel.addProducts(newProduct);
-          res.status(201).json({ message: 'Product added successfully.' });
+          
+          return res.status(201).json({ message: 'Product added successfully.' });
         } catch (error) {
           console.error('Error adding product:', error);
-          res.status(500).json({ error: 'Internal Server Error' });
+          return res.status(500).json({ error: 'Internal Server Error' });
         }
       }
     
@@ -114,7 +114,8 @@ class ProductController{
       async updateProductsByDiscountQuantity(req: Request, res: Response): Promise<Response> {
         try {
           const { prod_id, discount_percentage, quantity } = validateUpdateProduct(req.body);
-          const seller_id = (req as any).user_id;
+          const seller_id = (req as any).user.user_id;
+          console.log("update"+seller_id);
           const existingProduct = await ProductModel.getProductById(prod_id);
     
           if (existingProduct) {

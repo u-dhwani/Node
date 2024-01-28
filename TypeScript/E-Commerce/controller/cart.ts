@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { paginate } from '../utils/pagination';
 import { validateUpdateProductQuantity, validateProductId } from '../validations/cart';
 
-import CartModel from '../models/cart';
+import CartModel,{Cart,CartItem} from '../models/cart';
 
 class CartController {
   async addProductsInCart(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
@@ -10,11 +10,12 @@ class CartController {
     const {prod_id,quantity}=validationResult.value;
 
     try {
-      const user_Id = (req as any).user_id;
+      const user_Id = (req as any).user.user_id;
       const user_found = await CartModel.FindUserInCart(user_Id);
 
       await CartModel.createcartitem(user_Id, prod_id, quantity);
 
+     
       if (!user_found) {
         const amount = 0.0;
         await CartModel.createCartQuery(user_Id, amount);
@@ -83,9 +84,9 @@ class CartController {
     const {prod_id,quantity}=validationResult.value;
 
     try {
-      const user_Id = (req as any).user_id;
+      const user_Id = (req as any).user.user_id;
 
-      await CartModel.updateQuantity(quantity, user_Id, prod_id);
+      const updateQuantityResult=await CartModel.updateQuantity(quantity, user_Id, prod_id);
       await CartModel.updateCartAmount();
 
       const page: number = Number(req.query.page) || 1;

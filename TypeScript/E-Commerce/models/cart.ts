@@ -1,34 +1,47 @@
 import { QueryResult } from 'pg';
 import pool  from '../dbConfig';
+import DbConnection,{Condition}  from '../dbConfig';
 
-interface CartItem {
+export interface CartItem {
   user_id: number;
   prod_id: number;
   quantity: number;
 }
 
-interface Cart {
+export interface Cart {
   user_id: number;
   amount: number;
 }
 
-class CartModel{
+class CartModel extends DbConnection<Cart| CartItem>{
+  private cartItemModel: DbConnection<CartItem>;
+  constructor() {
+    super('cart');
+    this.cartItemModel = new DbConnection<CartItem>('cart_item');
+  }
+
     async FindUserInCart(userId: number): Promise<Cart | undefined> {
         try {
-          const result: QueryResult<Cart> = await pool.query('SELECT * FROM cart WHERE user_id = $1', [userId]);
+          const result: QueryResult<Cart> = await this.pool.query('SELECT * FROM cart WHERE user_id = $1', [userId]);
           return result.rows[0];
         } catch (error) {
           throw error;
         }
       }
     
-      async createCartQuery(userId: number, amount: number): Promise<Cart[]> {
+      async createCartQuery(userId: number, amount: number): Promise<any> {
         try {
-          const result: QueryResult<Cart> = await pool.query(
-            'INSERT INTO cart(user_id, amount) VALUES($1, $2) RETURNING *',
-            [userId, amount]
-          );
-          return result.rows;
+          // const result: QueryResult<Cart> = await this.pool.query(
+          //   'INSERT INTO cart(user_id, amount) VALUES($1, $2) RETURNING *',
+          //   [userId, amount]
+          // );
+          const cart={
+            userId,
+            amount
+          }
+          const result=this.addRecord(cart);
+    
+          return result;
         } catch (error) {
           throw error;
         }
@@ -36,7 +49,7 @@ class CartModel{
     
       async createcartitem(userId: number, prodId: number, quantity: number): Promise<CartItem> {
         try {
-          const sellerQuantityResult: QueryResult<CartItem> = await pool.query(
+          const sellerQuantityResult: QueryResult<CartItem> = await this.pool.query(
             'SELECT quantity FROM seller WHERE prod_id = $1',
             [prodId]
           );
@@ -48,7 +61,7 @@ class CartModel{
           const sellerQuantity: number = sellerQuantityResult.rows[0].quantity;
     
           if (sellerQuantity >= quantity) {
-            const result: QueryResult<CartItem> = await pool.query(
+            const result: QueryResult<CartItem> = await this.pool.query(
               'INSERT INTO cart_item(user_id, prod_id, quantity) VALUES($1, $2, $3) RETURNING *',
               [userId, prodId, quantity]
             );
@@ -64,13 +77,11 @@ class CartModel{
     
     
     
-      async updateQuantity(quantity: number, userId: number, prodId: number): Promise<void> {
+      async updateQuantity(quantity: number, userId: number, prodId: number): Promise<CartItem > {
         try {
-          await pool.query('UPDATE cart_item SET quantity = $1 WHERE user_id = $2 AND prod_id = $3', [
-            quantity,
-            userId,
-            prodId,
-          ]);
+          // await this.pool.query('UPDATE cart_item SET quantity = $1 WHERE user_id = $2 AND prod_id = $3', [quantity,userId,prodId,]);
+          const result=this.cartItemModel.updateRecord(['user_id','prod_id'],[userId,prodId],{quantity:quantity});
+          return result;
         } catch (error) {
           throw error;
         }
@@ -78,7 +89,7 @@ class CartModel{
 
       async updateCartAmount(): Promise<void> {
         try {
-          await pool.query(`
+          await this.pool.query(`
             UPDATE cart
             SET amount = (
               SELECT COALESCE(SUM(p.price * ci.quantity), 0)
@@ -101,7 +112,14 @@ class CartModel{
     
       async deleteProdfromCart(userId: number, prodId: number): Promise<void> {
         try {
-          await pool.query('DELETE FROM cart_item WHERE user_id = $1 AND prod_id = $2', [userId, prodId]);
+          // await this.pool.query('DELETE FROM cart_item WHERE user_id = $1 AND prod_id = $2', [userId, prodId]);
+          // const result=this.deleteRecord('email',email);
+          const conditions: Condition[] = [
+            { columnName: 'user_id', value: userId },
+            { columnName: 'prod_id', value: prodId },
+          ];
+          
+          const result = await this.cartItemModel.deleteRecord(conditions);
         } catch (error) {
           console.error('Error deleting product from cart:', error);
           throw error;
@@ -110,7 +128,7 @@ class CartModel{
     
       async checkProductInCartByuser_Id(userId: number, prodId: number): Promise<CartItem[]> {
         try {
-          const result: QueryResult<CartItem> = await pool.query(
+          const result: QueryResult<CartItem> = await this.pool.query(
             'SELECT * FROM cart_item WHERE user_id = $1 AND prod_id = $2',
             [userId, prodId]
           );
@@ -123,7 +141,7 @@ class CartModel{
     
       async checkUserInCartItem(userId: number): Promise<CartItem | undefined> {
         try {
-          const result: QueryResult<CartItem> = await pool.query('SELECT * FROM cart_item WHERE user_id = $1', [userId]);
+          const result: QueryResult<CartItem> = await this.pool.query('SELECT * FROM cart_item WHERE user_id = $1', [userId]);
           return result.rows[0];
         } catch (error) {
           console.error('Error checking user in cart item:', error);
@@ -133,7 +151,12 @@ class CartModel{
     
       async updateCartAmountAfterDelete(userId: number): Promise<void> {
         try {
-          await pool.query('UPDATE cart SET amount = 0.0 WHERE user_id = $1', [userId]);
+          const result = this.updateRecord(
+            ['user_id'], // Array of column names for the WHERE clause
+            [userId],    // Array of corresponding values
+            { amount:0.0 } // Updated data
+          );
+          await this.pool.query('UPDATE cart SET amount = 0.0 WHERE user_id = $1', [userId]);
         } catch (error) {
           console.error('Error updating cart amount after delete:', error);
           throw error;
@@ -142,7 +165,7 @@ class CartModel{
     
       async getAllProductsInCart(userId: number, pageSize: number, offset: number): Promise<CartItem[]> {
         try {
-          const result: QueryResult<CartItem> = await pool.query(
+          const result: QueryResult<CartItem> = await this.pool.query(
             'SELECT * FROM cart JOIN cart_item ON cart.user_id = cart_item.user_id WHERE cart.user_id = $1 LIMIT $2 OFFSET $3',
             [userId, pageSize, offset]
           );

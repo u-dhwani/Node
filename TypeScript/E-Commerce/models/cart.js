@@ -13,11 +13,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const dbConfig_1 = __importDefault(require("../dbConfig"));
-class CartModel {
+class CartModel extends dbConfig_1.default {
+    constructor() {
+        super('cart_user');
+        this.cartItemModel = new dbConfig_1.default('cart_item');
+    }
     FindUserInCart(userId) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield dbConfig_1.default.query('SELECT * FROM cart WHERE user_id = $1', [userId]);
+                const result = yield this.pool.query('SELECT * FROM cart WHERE user_id = $1', [userId]);
                 return result.rows[0];
             }
             catch (error) {
@@ -28,8 +32,16 @@ class CartModel {
     createCartQuery(userId, amount) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield dbConfig_1.default.query('INSERT INTO cart(user_id, amount) VALUES($1, $2) RETURNING *', [userId, amount]);
-                return result.rows;
+                // const result: QueryResult<Cart> = await this.pool.query(
+                //   'INSERT INTO cart(user_id, amount) VALUES($1, $2) RETURNING *',
+                //   [userId, amount]
+                // );
+                const cart = {
+                    userId,
+                    amount
+                };
+                const result = this.addRecord(cart);
+                return result;
             }
             catch (error) {
                 throw error;
@@ -39,13 +51,13 @@ class CartModel {
     createcartitem(userId, prodId, quantity) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const sellerQuantityResult = yield dbConfig_1.default.query('SELECT quantity FROM seller WHERE prod_id = $1', [prodId]);
+                const sellerQuantityResult = yield this.pool.query('SELECT quantity FROM seller WHERE prod_id = $1', [prodId]);
                 if (!sellerQuantityResult.rows.length) {
                     throw new Error('Seller does not have this product.');
                 }
                 const sellerQuantity = sellerQuantityResult.rows[0].quantity;
                 if (sellerQuantity >= quantity) {
-                    const result = yield dbConfig_1.default.query('INSERT INTO cart_item(user_id, prod_id, quantity) VALUES($1, $2, $3) RETURNING *', [userId, prodId, quantity]);
+                    const result = yield this.pool.query('INSERT INTO cart_item(user_id, prod_id, quantity) VALUES($1, $2, $3) RETURNING *', [userId, prodId, quantity]);
                     return result.rows[0];
                 }
                 else {
@@ -60,11 +72,9 @@ class CartModel {
     updateQuantity(quantity, userId, prodId) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                yield dbConfig_1.default.query('UPDATE cart_item SET quantity = $1 WHERE user_id = $2 AND prod_id = $3', [
-                    quantity,
-                    userId,
-                    prodId,
-                ]);
+                // await this.pool.query('UPDATE cart_item SET quantity = $1 WHERE user_id = $2 AND prod_id = $3', [quantity,userId,prodId,]);
+                const result = this.cartItemModel.updateRecord(['user_id', 'prod_id'], [userId, prodId], { quantity: quantity });
+                return result;
             }
             catch (error) {
                 throw error;
@@ -74,7 +84,7 @@ class CartModel {
     updateCartAmount() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                yield dbConfig_1.default.query(`
+                yield this.pool.query(`
             UPDATE cart
             SET amount = (
               SELECT COALESCE(SUM(p.price * ci.quantity), 0)
@@ -99,7 +109,13 @@ class CartModel {
     deleteProdfromCart(userId, prodId) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                yield dbConfig_1.default.query('DELETE FROM cart_item WHERE user_id = $1 AND prod_id = $2', [userId, prodId]);
+                // await this.pool.query('DELETE FROM cart_item WHERE user_id = $1 AND prod_id = $2', [userId, prodId]);
+                // const result=this.deleteRecord('email',email);
+                const conditions = [
+                    { columnName: 'user_id', value: userId },
+                    { columnName: 'prod_id', value: prodId },
+                ];
+                const result = yield this.cartItemModel.deleteRecord(conditions);
             }
             catch (error) {
                 console.error('Error deleting product from cart:', error);
@@ -110,7 +126,7 @@ class CartModel {
     checkProductInCartByuser_Id(userId, prodId) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield dbConfig_1.default.query('SELECT * FROM cart_item WHERE user_id = $1 AND prod_id = $2', [userId, prodId]);
+                const result = yield this.pool.query('SELECT * FROM cart_item WHERE user_id = $1 AND prod_id = $2', [userId, prodId]);
                 return result.rows;
             }
             catch (error) {
@@ -122,7 +138,7 @@ class CartModel {
     checkUserInCartItem(userId) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield dbConfig_1.default.query('SELECT * FROM cart_item WHERE user_id = $1', [userId]);
+                const result = yield this.pool.query('SELECT * FROM cart_item WHERE user_id = $1', [userId]);
                 return result.rows[0];
             }
             catch (error) {
@@ -134,7 +150,11 @@ class CartModel {
     updateCartAmountAfterDelete(userId) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                yield dbConfig_1.default.query('UPDATE cart SET amount = 0.0 WHERE user_id = $1', [userId]);
+                const result = this.updateRecord(['user_id'], // Array of column names for the WHERE clause
+                [userId], // Array of corresponding values
+                { amount: 0.0 } // Updated data
+                );
+                yield this.pool.query('UPDATE cart SET amount = 0.0 WHERE user_id = $1', [userId]);
             }
             catch (error) {
                 console.error('Error updating cart amount after delete:', error);
@@ -145,7 +165,7 @@ class CartModel {
     getAllProductsInCart(userId, pageSize, offset) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield dbConfig_1.default.query('SELECT * FROM cart JOIN cart_item ON cart.user_id = cart_item.user_id WHERE cart.user_id = $1 LIMIT $2 OFFSET $3', [userId, pageSize, offset]);
+                const result = yield this.pool.query('SELECT * FROM cart JOIN cart_item ON cart.user_id = cart_item.user_id WHERE cart.user_id = $1 LIMIT $2 OFFSET $3', [userId, pageSize, offset]);
                 return result.rows;
             }
             catch (error) {

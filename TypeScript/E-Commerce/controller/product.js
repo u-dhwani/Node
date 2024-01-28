@@ -56,8 +56,8 @@ class ProductController {
         return __awaiter(this, void 0, void 0, function* () {
             const { product_name, description, brand, price, category, discount_percentage, quantity } = (0, product_2.validateCreateProduct)(req.body);
             try {
-                const seller_id = req.user_id;
-                console.log(seller_id);
+                const seller_id = req.user.user_id;
+                console.log("welcome:" + seller_id);
                 const existingProduct = yield product_1.default.existingProduct(product_name, brand, seller_id);
                 if (existingProduct.length > 0) {
                     return res.status(409).json({ message: 'Product already exists. Update the quantity.' });
@@ -73,11 +73,11 @@ class ProductController {
                     quantity
                 };
                 yield product_1.default.addProducts(newProduct);
-                res.status(201).json({ message: 'Product added successfully.' });
+                return res.status(201).json({ message: 'Product added successfully.' });
             }
             catch (error) {
                 console.error('Error adding product:', error);
-                res.status(500).json({ error: 'Internal Server Error' });
+                return res.status(500).json({ error: 'Internal Server Error' });
             }
         });
     }
@@ -120,7 +120,8 @@ class ProductController {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { prod_id, discount_percentage, quantity } = (0, product_2.validateUpdateProduct)(req.body);
-                const seller_id = req.user_id;
+                const seller_id = req.user.user_id;
+                console.log("update" + seller_id);
                 const existingProduct = yield product_1.default.getProductById(prod_id);
                 if (existingProduct) {
                     yield product_1.default.updateProductsByDiscountQuantity(quantity, seller_id, prod_id, discount_percentage);

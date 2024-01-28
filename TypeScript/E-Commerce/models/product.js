@@ -13,18 +13,42 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const dbConfig_1 = __importDefault(require("../dbConfig"));
-class ProductModel {
+class ProductModel extends dbConfig_1.default {
+    constructor() {
+        super('products');
+        this.sellerModel = new dbConfig_1.default('seller');
+    }
     addProducts(product) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield dbConfig_1.default.query('INSERT INTO products(product_name, description, brand, price, category, seller_id) VALUES($1, $2, $3, $4, $5, $6) RETURNING *', [product.product_name, product.description, product.brand, product.price, product.category, product.seller_id]);
-                yield dbConfig_1.default.query('INSERT INTO seller(seller_id, prod_id, discount_percentage, quantity) VALUES($1, $2, $3, $4)', [
-                    product.seller_id,
-                    result.rows[0].prod_id,
-                    product.discount_percentage,
-                    product.quantity
-                ]);
-                return result.rows[0];
+                const partialproduct = {
+                    product_name: product.product_name,
+                    description: product.description,
+                    brand: product.brand,
+                    price: product.price,
+                    category: product.category,
+                    seller_id: product.seller_id,
+                };
+                // Insert product data into 'products' table
+                const newProduct = yield this.addRecord(partialproduct);
+                // Insert seller data into 'seller' table
+                if (newProduct && newProduct.prod_id !== undefined) {
+                    const sellerModel = new dbConfig_1.default('seller');
+                    // Insert seller data into 'seller' table
+                    const seller = {
+                        seller_id: product.seller_id,
+                        prod_id: newProduct.prod_id,
+                        discount_percentage: product.discount_percentage,
+                        quantity: product.quantity,
+                        // Access prod_id only if it's defined
+                    };
+                    yield this.sellerModel.addRecord(seller);
+                }
+                else {
+                    // Handle the case where newProduct.prod_id is undefined
+                    throw new Error('Unable to retrieve prod_id from newProduct');
+                }
+                return newProduct;
             }
             catch (error) {
                 console.error('Error adding product:', error);
@@ -35,7 +59,7 @@ class ProductModel {
     getAllProducts(pageSize, offset) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield dbConfig_1.default.query('SELECT p.*, ' +
+                const result = yield this.pool.query('SELECT p.*, ' +
                     'p.price * ((100 - s.discount_percentage) / 100) AS final_amount, ' +
                     'p.price AS initial_amount ' +
                     'FROM products p ' +
@@ -54,7 +78,7 @@ class ProductModel {
     getProductById(productId) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield dbConfig_1.default.query('SELECT * FROM products WHERE prod_id = $1', [productId]);
+                const result = yield this.pool.query('SELECT * FROM products WHERE prod_id = $1', [productId]);
                 if (result.rows.length === 0) {
                     throw null;
                 }
@@ -69,7 +93,7 @@ class ProductModel {
     getProductByCategory(category) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield dbConfig_1.default.query('SELECT * FROM products WHERE category = $1', [category]);
+                const result = yield this.pool.query('SELECT * FROM products WHERE category = $1', [category]);
                 return result.rows || [];
             }
             catch (error) {
@@ -82,11 +106,12 @@ class ProductModel {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 console.log(`Deleting product with ID ${productId}`);
-                const result = yield dbConfig_1.default.query('UPDATE products SET status=\'inactive\' WHERE prod_id = $1 returning *', [productId]);
-                if (result.rows.length === 0) {
+                //const result = await this.pool.query('UPDATE products SET status=\'inactive\' WHERE prod_id = $1 returning *', [productId]);
+                const result = this.updateRecord(['prod_id'], [productId], { status: 'inactive' });
+                if (!result) {
                     throw new Error('Product not found');
                 }
-                return result.rows[0];
+                return result;
             }
             catch (error) {
                 console.error(`Error deleting product with ID ${productId}:`, error);
@@ -97,11 +122,18 @@ class ProductModel {
     updateProductsByDiscountQuantity(quantity, sellerId, productId, discount_percentage) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield dbConfig_1.default.query('UPDATE seller SET quantity=$1,discount_percentage=$4 WHERE seller_id=$2 AND prod_id=$3 RETURNING *', [quantity, sellerId, productId, discount_percentage]);
-                if (result.rows.length === 0) {
+                // const result = await this.pool.query(
+                //   'UPDATE seller SET quantity=$1,discount_percentage=$4 WHERE seller_id=$2 AND prod_id=$3 RETURNING *',
+                //   [quantity, sellerId, productId, discount_percentage]
+                // );
+                const result = this.sellerModel.updateRecord(['seller_id', 'prod_id'], // Array of column names for the WHERE clause
+                [sellerId, productId], // Array of corresponding values
+                { quantity: quantity, discount_percentage: discount_percentage } // Updated data
+                );
+                if (!result) {
                     throw new Error('Seller or product not found');
                 }
-                return result.rows[0];
+                return result;
             }
             catch (error) {
                 console.error(`Error updating product quantity for seller ${sellerId} and product ${productId}:`, error);
@@ -112,7 +144,7 @@ class ProductModel {
     finalPrice(productId) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield dbConfig_1.default.query('SELECT p.price * ((100 - s.discount_percentage) / 100) AS final_amount, p.price as initial_amount ' +
+                const result = yield this.pool.query('SELECT p.price * ((100 - s.discount_percentage) / 100) AS final_amount, p.price as initial_amount ' +
                     'FROM products p ' +
                     'JOIN seller s ON p.prod_id = s.prod_id ' +
                     'WHERE p.prod_id = $1', [productId]);
@@ -127,7 +159,7 @@ class ProductModel {
     existingProduct(productName, brand, sellerId) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const result = yield dbConfig_1.default.query('SELECT * FROM products WHERE product_name = $1 AND brand = $2 AND seller_id = $3', [
+                const result = yield this.pool.query('SELECT * FROM products WHERE product_name = $1 AND brand = $2 AND seller_id = $3', [
                     productName,
                     brand,
                     sellerId
