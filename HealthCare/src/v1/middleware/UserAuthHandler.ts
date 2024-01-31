@@ -3,12 +3,63 @@ import bcrypt from 'bcrypt';
 import PatientModel,{Patient} from '../model/dbpatient';
 import DoctorModel,{Doctor} from '../model/dbdoctor';
 import HospitalModel,{Hospital} from '../model/dbhospital';
+import AdminModel,{Admin} from '../model/dbadmin';
 import { Functions } from '../library/functions';
 import * as Joi from 'joi';
 import  {validations}  from '../library/validations';
+import { generateToken,verifyToken } from './checkAuth';
 const functions=new Functions();
 
-export function signUpSchema(req: any, res: any, next: any) {
+export function validatesignUpAdmin(req: any, res: any, next: any) {
+  
+    const schema = Joi.object({
+        first_name: Joi.string().trim().required(),
+        last_name: Joi.string().trim().required(),
+        phone_number: Joi.string().trim().required(),
+        email: Joi.string().trim().email().required(),
+        password: Joi.string().required()
+    });
+    let validationsObj = new validations();
+    if (!validationsObj.validateRequest(req, res, next, schema)) {
+        return false;
+    }   
+}
+
+export function validatesignUpDoctor(req: any, res: any, next: any) {
+  
+    const schema = Joi.object({
+        first_name: Joi.string().trim().required(),
+        last_name: Joi.string().trim().required(),
+        speciality: Joi.string().trim().required(),
+        gender: Joi.string().valid('Male', 'Female').required(),
+        address: Joi.string().trim().required(),
+        phone_number: Joi.string().trim().required(),
+        email: Joi.string().trim().email().required(),
+        fees: Joi.number().required(),
+        password: Joi.string().required()
+    });
+    let validationsObj = new validations();
+    if (!validationsObj.validateRequest(req, res, next, schema)) {
+        return false;
+    }   
+}
+
+export function validatesignUpHospital(req: any, res: any, next: any) {
+  
+    const schema = Joi.object({
+        hospital_name: Joi.string().trim().required(),
+        address: Joi.string().trim().required(),
+        phone_number: Joi.string().trim().required(),
+        email: Joi.string().trim().email().required(),
+        password: Joi.string().required()
+    });
+    let validationsObj = new validations();
+    if (!validationsObj.validateRequest(req, res, next, schema)) {
+        return false;
+    }   
+}
+
+export function validatesignUpPatient(req: any, res: any, next: any) {
   
     const schema = Joi.object({
         first_name: Joi.string().trim().required(),
@@ -24,7 +75,7 @@ export function signUpSchema(req: any, res: any, next: any) {
     if (!validationsObj.validateRequest(req, res, next, schema)) {
         return false;
     }   
-  }
+}
 
 export function loginSchema(req: any, res: any, next: any) {
   
@@ -43,7 +94,7 @@ export function loginSchema(req: any, res: any, next: any) {
 export async function signUp(req: Request, res: Response, role: string): Promise<Response<any, Record<string, any>> | any> {
   try {
     let userQuery;
-    let newUser: Patient | Hospital | Doctor;
+    let newUser: Patient | Hospital | Doctor | Admin ;
     const commonFields = {
       email: req.body.email,
       password: await bcrypt.hash(req.body.password, 10),
@@ -91,6 +142,16 @@ export async function signUp(req: Request, res: Response, role: string): Promise
         userQuery = await DoctorModel.createRecord(newUser);
         break;
 
+        case 'admin':
+            newUser = {
+              ...commonFields,
+              first_name: req.body.first_name,
+              last_name: req.body.last_name,
+              phone_number: req.body.phone_number,
+            } as Admin;
+            userQuery = await AdminModel.createRecord(newUser);
+            break;
+
       default:
         return res.status(400).json({ error: true, message: 'Invalid role specified', data: null });
     }
@@ -99,7 +160,7 @@ export async function signUp(req: Request, res: Response, role: string): Promise
       return res.json(functions.output(500, userQuery.status_message, null));
     }
 
-    const token = functions.generateToken({ email: req.body.email, role, user_id: userQuery.data });
+    const token = generateToken({ email: req.body.email, role, user_id: userQuery.data });
     return res.json({ error: false, message: 'Signup successful', data: { token } });
   } catch (error) {
     console.error('Error in signup:', error);
@@ -121,6 +182,11 @@ export async function login(req: Request, res: Response): Promise<Response<any, 
           userModel = PatientModel;
           findUserByTableID = 'patient_id';
           break;
+
+          case 'admin':
+            userModel = AdminModel;
+            findUserByTableID = 'admin_id';
+            break;
   
         case 'doctor':
           userModel = DoctorModel;
@@ -147,7 +213,7 @@ export async function login(req: Request, res: Response): Promise<Response<any, 
   
       if (isMatch) {
         if (user && user[0][findUserByTableID] !== undefined) {
-          const token = functions.generateToken({ email, role, user_id: user[0][findUserByTableID] });
+          const token = generateToken({ email, role, user_id: user[0][findUserByTableID] });
           return res.json({ error: false, message: 'Login successful', data: { token } });
         } else {
           return res.json({ error: true, message: 'Login Unsuccessful', data: null });

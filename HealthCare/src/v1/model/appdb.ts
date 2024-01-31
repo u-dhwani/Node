@@ -15,57 +15,52 @@ export class Appdb extends db {
 	constructor() {
 		super();
 	}
+	
 	async createRecord<T>(recordData: T): Promise<Response<any, Record<string, any>> | any> {
 		try {
 		  const result = await this.insertRecord(recordData);
-	
+	  
 		  if (!result) {
-			return functions.output(500, `Something went wrong while inserting ${this.table}`);
-			//return res.json(functions.output(500, user_id_query.status_message, null));
+			return { status: 500, message: `Something went wrong while inserting ${this.table}`, data: null };
 		  } else {
-			return functions.output(200, `${this.table} inserted successfully`, result);
+			return { status: 200, message: `${this.table} inserted successfully`, data: result };
 		  }
-	
+	  
 		} catch (error: any) {
-		  return functions.output(500, `Error creating ${this.table}`);
+		  return { status: 500, message: `Error creating ${this.table}`, data: null };
 		}
 	  }
-
-	  async getUserByEmail(email: string): Promise<Response<any, Record<string, any>> |  any> {
+	  
+	  async getUserByEmail(email: string): Promise<Response<any, Record<string, any>> | any> {
 		try {
-		  
-		  const result=await this.selectRecordByEmail(email);
-		  if(result){
-			return result;
-		  }
-		  else{
-			return functions.output(500, 'Error in retrieving',null);
-			
-		  }
-	
+		  const result = await this.selectRecordByEmail(email);
+		  return result || { status: 500, message: 'Error in retrieving', data: null };
+	  
 		} catch (error: any) {
-			return functions.output(500, error.message,null);
+		  return { status: 500, message: error.message, data: null };
 		}
 	  }
-
-	  async getUserById(id: number): Promise<Response<any, Record<string, any>> |  any> {
+	  
+	  async getUserById(id: number): Promise<Response<any, Record<string, any>> | any> {
 		try {
-		  
-		  const result=await this.selectRecord(id);
-		  if(result){
-			return result;
-		  }
-		  else{
-			return functions.output(500, 'Error in retrieving',null);
-			
-		  }
-	
+		  const result = await this.selectRecord(id);
+		  return result || { status: 500, message: 'Error in retrieving', data: null };
+	  
 		} catch (error: any) {
-			return functions.output(500, error.message,null);
+		  return { status: 500, message: error.message, data: null };
 		}
 	  }
+	  
+	  async recordUpdate(id: number, data: any): Promise<Response<any, Record<string, any>> | any> {
+		try {
+		  const result = await this.updateRecord(id, data);
+		  return result > 0 ? { status: 200, message: 'Record updated successfully', data: result } : { status: 404, message: 'Record not found', data: null };
+		} catch (error: any) {
+		  return { status: 500, message: error.message, data: null };
+		}
+	  }
+	  
+	 }
 
-	
-}
 
 export default new Appdb();

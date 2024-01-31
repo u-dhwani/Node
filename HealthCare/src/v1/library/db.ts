@@ -118,7 +118,10 @@ export class db {
 			}
 		}
 
-		let query = 'UPDATE ' + table + ' SET ' + updatestring + ' ' + where;
+		//let query = 'UPDATE ' + table + ' SET ' + updatestring + ' ' + where;
+		let query = `UPDATE ${table} SET ${updatestring} ${where} RETURNING *`;
+
+		console.log(query);
 		return this.executeQuery(query);
 	}
 
@@ -141,6 +144,7 @@ export class db {
 		return this.select(this.table, fields, 'WHERE ' + this.uniqueField + ' = ' + id, this.orderby, this.limit);
 	}
 
+	
 	selectRecordByEmail(email: string, fields = '*') {
 		
 		return this.select(this.table, fields, `WHERE ${this.findUserByEmail} = '${email}'`, this.orderby, this.limit);
