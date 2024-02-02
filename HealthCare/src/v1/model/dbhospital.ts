@@ -26,6 +26,9 @@ class HospitalModel extends Appdb {
     this.findUserByEmail='email';
   }
 
+  
+
+  
   }
 
 export default new HospitalModel();

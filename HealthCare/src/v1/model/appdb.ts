@@ -24,7 +24,7 @@ export class Appdb extends db {
 		  if (!result) {
 			return { status: 500, message: `Something went wrong while inserting ${this.table}`, data: null };
 		  } else {
-			return { status: 200, message: `${this.table} inserted successfully`, data: result };
+			return result;
 		  }
 	  
 		} catch (error: any) {
@@ -43,25 +43,13 @@ export class Appdb extends db {
 		}
 	}
 
-	//   async getUserByEmail(email: string): Promise<Response<any, Record<string, any>> | any> {
-	// 	try {
-	// 	  const result = await this.selectRecord({email:email});
-	// 	  return result || { status: 500, message: 'Error in retrieving', data: null };
-	  
-	// 	} catch (error: any) {
-	// 	  return { status: 500, message: error.message, data: null };
-	// 	}
-	//   }
-	  
-	//   async getUserById(id: number): Promise<Response<any, Record<string, any>> | any> {
-	// 	try {
-	// 	  const result = await this.selectRecord({id:id});
-	// 	  return result || { status: 500, message: 'Error in retrieving', data: null };
-	  
-	// 	} catch (error: any) {
-	// 	  return { status: 500, message: error.message, data: null };
-	// 	}
-	//   }
+	async getUsers(id: number, conditionField: string) {
+		        this.where = " WHERE "+conditionField+"= "+id;
+		        let results: any[] = await this.listRecords("*");
+		        return results;
+	}
+
+	 
 	  
 	  async recordUpdate(id: number, data: any): Promise<Response<any, Record<string, any>> | any> {
 		try {

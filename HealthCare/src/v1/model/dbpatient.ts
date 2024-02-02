@@ -35,7 +35,7 @@ class PatientModel extends Appdb {
     let client;
   
     try {
-      client = await this.connectionObj.getConnection();
+       client = await this.connectionObj.getConnection();
       let start = (this.page - 1) * this.rpp;
   
       const result = await client.query(`
@@ -47,7 +47,7 @@ class PatientModel extends Appdb {
         GROUP BY d.speciality
         ORDER BY d.speciality, MIN(d.fees)
         LIMIT $2 OFFSET $3`, [hospital_id, this.rpp, start]);
-  
+      
       return result.rows;
     } catch (error) {
       throw error;

@@ -19,6 +19,8 @@ class DoctorHospitalModel extends Appdb {
     
   }
 
+  
+
 }
 
 export default new DoctorHospitalModel();

@@ -34,21 +34,28 @@ class DoctorModel extends Appdb {
 
   async allPatientOfParticularDoctor(doctor_id:number): Promise<any> {
       try {
+
         const client = await this.connectionObj.getConnection();
         let start = (this.page - 1) * this.rpp;
-        const result = await client.query("SELECT p.first_name, p.last_name, p.date_of_birth, p.gender, p.phone_number, p.email, MAX(a.appointment_date) AS latest_appointment_date, MAX(a.appointment_time) AS latest_appointment_time FROM patient p JOIN appointment a ON p.patient_id = a.patient_id WHERE a.appointment_status = 'Completed' AND doctor_id = $1 GROUP BY p.patient_id LIMIT $2 OFFSET $3", [doctor_id,this.rpp,start]);
-        return result.rows;
-      } catch (error) {
+        
+        const selectFields = "p.first_name, p.last_name, p.date_of_birth, p.gender, p.phone_number, p.email, MAX(a.appointment_date) AS latest_appointment_date, MAX(a.appointment_time) AS latest_appointment_time ";
+        const fromTable = "patient p JOIN appointment a ON p.patient_id = a.patient_id";
+        const whereCondition = "a.appointment_status = 'Completed' AND doctor_id ="+ doctor_id+" GROUP BY p.patient_id";
+        const limitValue = this.rpp;
+        const offsetValue = start;
+        const result=await this.selectdynamicQuery(selectFields, fromTable, whereCondition, limitValue, offsetValue)
+        return result;
+
+       } catch (error) {
         throw error;
       }
   }
 
-  async incomeOfThatDay(criteria: Record<string, any>,orderBy:string): Promise<any> {
+  async incomeOfThatDay(app_date:Date,doctor_id:number): Promise<any> {
 		try {
-			this.orderby=orderBy;
-			const result = await this.selectRecord(criteria);
-			return result || null;
-	
+      const client = await this.connectionObj.getConnection();
+      const result = await client.query("SELECT hospital_id, SUM(appointment_fee) AS total_income FROM appointment WHERE doctor_id = $1 AND appointment_date = $2 GROUP BY hospital_id",[doctor_id,app_date]);
+      return result.rows;
 		} catch (error: any) {
 			return { status: 500, message: error.message, data: null };
 		}

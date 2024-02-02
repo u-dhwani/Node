@@ -140,7 +140,7 @@ export class db {
 	 * @param id table unique id
 	 * @param fields DB fields
 	 */
-	// selectRecord(id: number, fields = '*') {
+	// selectRecordBy(id: number, fields = '*') {
 	// 	return this.select(this.table, fields, 'WHERE ' + this.uniqueField + ' = ' + id, this.orderby, this.limit);
 	// }
 
@@ -173,6 +173,18 @@ export class db {
 		}
 	  }
 	  
+	async selectdynamicQuery(selectFields:string, fromTable:string, whereCondition:string, limitValue:number, offsetValue:number) {
+		const query = ` SELECT ${selectFields} FROM ${fromTable} WHERE ${whereCondition} LIMIT ${limitValue} OFFSET ${offsetValue}`;
+		console.log(query);
+		return this.executeQuery(query);
+	  
+	}
+
+	async updateDynamicQuery(setValues: string, whereCondition: string) {
+		const query = `UPDATE ${this.table} SET ${setValues} WHERE ${whereCondition} RETURNING *`;
+		console.log(query);
+		return this.executeQuery(query);
+	}
 
 	/**
 	 * Insert record into DB with given array

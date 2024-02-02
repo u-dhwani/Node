@@ -26,13 +26,13 @@ async function signup(req: Request, res: Response): Promise<Response<any, Record
       const role: string = 'admin';
       return signUp(req, res, role); 
     }
-    else{  
-        return res.status(404).json({ error: true, message: 'User Found', data: null });
+    else{   
+      return res.send(functions.output(404, 'User Found', null));
     }
   }
   catch (error) {
     console.error('Error in signup:', error);
-    return res.status(500).json({ error: true, message: 'Internal Server Error', data: null });
+    return res.send(functions.output(500, 'Internal Server Error', null));
   }
 }
 

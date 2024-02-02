@@ -18,6 +18,8 @@ doctorRouter.post('/signup',validatesignUpDoctor,signup);
 doctorRouter.post('/signin',loginSchema,login);
 doctorRouter.post('/updateAppointment',checkAuth,checkAccess('doctor'),validateUpdateAppointment,updateAppointment);
 doctorRouter.get('/patients',checkAuth,checkAccess('doctor'),allPatientOfParticularDoctor);
+doctorRouter.get('/income',checkAuth,checkAccess('doctor'),validateincomeOfThatDay,incomeOfThatDay);
+doctorRouter.get('/appointment',checkAuth,checkAccess('doctor'),todaysAppointment);
 export default doctorRouter;
 
 
@@ -30,6 +32,19 @@ function validateUpdateAppointment(req: any, res: any, next: any) {
     appointment_fee: Joi.number().precision(2).min(0).required(),
     Disease: Joi.string().max(255).required(),
     appointment_status: Joi.string().valid('Scheduled', 'Completed', 'Cancelled').required(),
+  });
+
+  let validationsObj = new validations();
+  if (!validationsObj.validateRequest(req, res, next, schema)) {
+      return false;
+  }
+}
+
+
+function validateincomeOfThatDay(req: any, res: any, next: any) {
+  
+  const schema = Joi.object({
+    date: Joi.date().required(),
   });
 
   let validationsObj = new validations();
@@ -59,6 +74,7 @@ async function signup(req: Request, res: Response): Promise<Response<any, Record
     return res.status(500).json({ error: true, message: 'Internal Server Error', data: null });
   }
 }
+
 
 async function allPatientOfParticularDoctor(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
   try{
@@ -102,12 +118,33 @@ async function updateAppointment(req: Request, res: Response): Promise<Response<
 
 
 async function incomeOfThatDay(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
+  try{
     const {date}=req.body;
     const doctor_id=(req as any).user.user_id;
+    const incomeDoctor = await DoctorModel.incomeOfThatDay(date,doctor_id);
     
-
-
+    return res.json({ error: false, message: 'Imcome on that day', data: incomeDoctor });
+  } catch (error) {
+    console.error('Error in retrieving doctor details:', error);
+    return res.status(500).json({ error: true, message: 'Internal Server Error', data: null });
+  } 
 }
 
+
+async function todaysAppointment(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
+  try {
+    const doctor_id=(req as any).user.user_id;
+    const today = new Date();  
+    const formattedDate = today.toISOString().split('T')[0];
+    
+    const doctorDetails = await AppointmentModel.getUserByCriteria({appointment_date:formattedDate,doctor_id:doctor_id},'ORDER BY appointment_time');
+    console.log(doctorDetails);
+
+    return res.json({ error: false, message: 'Hospital details retrieved successfully', data: doctorDetails });
+  } catch (error) {
+    console.error('Error in retrieving doctor details:', error);
+    return res.status(500).json({ error: true, message: 'Internal Server Error', data: null });
+  }
+}
 
    

@@ -1,23 +1,36 @@
-// import  Appdb  from "./appdb";
-// const appdb=new Appdb();
-// export class dbproducts extends appdb {
-//     constructor() {
-//         super();
-//         this.table = 'products';
-//         this.uniqueField = 'id';
-//     }
+import { QueryResult } from 'pg';
+import { Functions } from "../library/functions";
+import { Appdb } from './appdb';
 
-//     /**
-//      * Make sure to write proper commenting for future reference
-//      * @param seller_id seller whom products is needed
-//      * @returns array
-//      */
-//     async getProducts(seller_id: number) {
-//         this.where = " WHERE seller_id = " + seller_id;
-//         this.page = 5;
-//         this.orderby = ' ORDER by id desc';
-//         this.rpp = 50;
-//         let results: any[] = await this.listRecords("*");
-//         return results;
-//     }
-// }
+const functions=new Functions();
+
+
+export interface Products {
+    products_id?: bigint,
+    product_name : string,
+    price : number,
+    quantity : number
+       
+}
+
+class ProductModel extends Appdb {
+  
+  constructor() {
+    super();
+    this.table = 'products';
+    this.uniqueField = 'products_id';
+  
+  }
+
+  async checkandUpdateQuantity(product_id:number,quantity:number):Promise<any>{
+    
+    const setValues = "quantity = CASE WHEN "+quantity+" < quantity THEN quantity - "+quantity+" ELSE quantity END";
+    const whereCondition = 'products_id = '+product_id;
+     const result=await this.updateDynamicQuery(setValues, whereCondition);
+    return result;
+
+  }
+
+}
+
+export default new ProductModel();
