@@ -1,4 +1,9 @@
 import dateFormat from "dateformat";
+
+// If you need to use the dateFormat module, you should await the Promise
+
+
+
 import { Pool, types } from "pg";
 
 export class connection {
@@ -23,27 +28,28 @@ export class connection {
 			connectionString: process.env.DATABASE_URL
 		});
 
-		// try {
-		// 	/* Convert "timestamp without timezone" into local timezone. eg. 2019-01-23T10:25:33.000Z --> 2019-01-23 15:55:33 */
-		// 	var datetimeParseFn = function (val: any) {
-		// 		return val === null ? null : dateFormat(val, 'yyyy-mm-dd HH:MM:ss');
-		// 	}
-		// 	/* Convert "date" into local date without timezone. eg. 2019-10-28T18:30:00.000Z --> 2019-10-29 */
-		// 	var dateParseFn = function (val: any) {
-		// 		return val === null ? null : dateFormat(val, 'yyyy-mm-dd');
-		// 	}
-		// 	types.setTypeParser(types.builtins.TIMESTAMP, datetimeParseFn);
-		// 	types.setTypeParser(types.builtins.DATE, dateParseFn);
-
+		
+		try {
+			/* Convert "timestamp without timezone" into local timezone. eg. 2019-01-23T10:25:33.000Z --> 2019-01-23 15:55:33 */
+			var datetimeParseFn = function (val: any) {
+				return val === null ? null : dateFormat(val, 'yyyy-mm-dd HH:MM:ss');
+			}
+			/* Convert "date" into local date without timezone. eg. 2019-10-28T18:30:00.000Z --> 2019-10-29 */
+			var dateParseFn = function (val: any) {
+				return val === null ? null : dateFormat(val, 'yyyy-mm-dd');
+			}
+			types.setTypeParser(types.builtins.TIMESTAMP, datetimeParseFn);
+			types.setTypeParser(types.builtins.DATE, dateParseFn);
 			let result = await connection.connection.connect();
 			if (result) {
 				console.log('Database Connected!');
 			}
 		 	return result;
-		// } catch (error) {
-		// 	console.log(error);
-		// 	connection.connection = false;
-		// 	return false;
-		// }
+			
+		} catch (error) {
+			console.log(error);
+			connection.connection = false;
+			return false;
+		}
 	}
 }

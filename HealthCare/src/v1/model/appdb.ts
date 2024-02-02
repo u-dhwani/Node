@@ -12,6 +12,7 @@ export interface Condition {
 }
 
 export class Appdb extends db {
+	
 	constructor() {
 		super();
 	}
@@ -19,7 +20,7 @@ export class Appdb extends db {
 	async createRecord<T>(recordData: T): Promise<Response<any, Record<string, any>> | any> {
 		try {
 		  const result = await this.insertRecord(recordData);
-	  
+			
 		  if (!result) {
 			return { status: 500, message: `Something went wrong while inserting ${this.table}`, data: null };
 		  } else {
@@ -31,25 +32,36 @@ export class Appdb extends db {
 		}
 	  }
 	  
-	  async getUserByEmail(email: string): Promise<Response<any, Record<string, any>> | any> {
+	  async getUserByCriteria(criteria: Record<string, any>,orderBy:string): Promise<Response<any, Record<string, any>> | any> {
 		try {
-		  const result = await this.selectRecordByEmail(email);
-		  return result || { status: 500, message: 'Error in retrieving', data: null };
-	  
+			this.orderby=orderBy;
+			const result = await this.selectRecord(criteria);
+			return result || null;
+	
 		} catch (error: any) {
-		  return { status: 500, message: error.message, data: null };
+			return { status: 500, message: error.message, data: null };
 		}
-	  }
+	}
+
+	//   async getUserByEmail(email: string): Promise<Response<any, Record<string, any>> | any> {
+	// 	try {
+	// 	  const result = await this.selectRecord({email:email});
+	// 	  return result || { status: 500, message: 'Error in retrieving', data: null };
 	  
-	  async getUserById(id: number): Promise<Response<any, Record<string, any>> | any> {
-		try {
-		  const result = await this.selectRecord(id);
-		  return result || { status: 500, message: 'Error in retrieving', data: null };
+	// 	} catch (error: any) {
+	// 	  return { status: 500, message: error.message, data: null };
+	// 	}
+	//   }
 	  
-		} catch (error: any) {
-		  return { status: 500, message: error.message, data: null };
-		}
-	  }
+	//   async getUserById(id: number): Promise<Response<any, Record<string, any>> | any> {
+	// 	try {
+	// 	  const result = await this.selectRecord({id:id});
+	// 	  return result || { status: 500, message: 'Error in retrieving', data: null };
+	  
+	// 	} catch (error: any) {
+	// 	  return { status: 500, message: error.message, data: null };
+	// 	}
+	//   }
 	  
 	  async recordUpdate(id: number, data: any): Promise<Response<any, Record<string, any>> | any> {
 		try {
@@ -59,6 +71,8 @@ export class Appdb extends db {
 		  return { status: 500, message: error.message, data: null };
 		}
 	  }
+
+	  
 	  
 	 }
 

@@ -20,9 +20,9 @@ export default adminRouter;
 
 async function signup(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
   try {
-    const user: Admin[] | null = await adminModel.getUserByEmail(req.body.email);
+    const user: Admin[] | null = await adminModel.getUserByCriteria({email:req.body.email},'');
         
-    if (Array.isArray(user) && user.length === 0) {
+    if (!user) {
       const role: string = 'admin';
       return signUp(req, res, role); 
     }

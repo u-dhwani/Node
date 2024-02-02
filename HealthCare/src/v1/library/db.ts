@@ -140,15 +140,38 @@ export class db {
 	 * @param id table unique id
 	 * @param fields DB fields
 	 */
-	selectRecord(id: number, fields = '*') {
-		return this.select(this.table, fields, 'WHERE ' + this.uniqueField + ' = ' + id, this.orderby, this.limit);
-	}
+	// selectRecord(id: number, fields = '*') {
+	// 	return this.select(this.table, fields, 'WHERE ' + this.uniqueField + ' = ' + id, this.orderby, this.limit);
+	// }
 
 	
-	selectRecordByEmail(email: string, fields = '*') {
+	// selectRecordByEmail(email: string, fields = '*') {
 		
-		return this.select(this.table, fields, `WHERE ${this.findUserByEmail} = '${email}'`, this.orderby, this.limit);
-	}
+	// 	return this.select(this.table, fields, `WHERE ${this.findUserByEmail} = '${email}'`, this.orderby, this.limit);
+	// }
+	  
+	async selectRecord(data: any, fields?: string) {
+		try {
+		  // Build WHERE clause based on id and additional conditions from data
+		  const conditions = Object.entries({ ...data })
+			.map(([key, value]) => `${key} = '${value}'`)
+			.join(' AND ');
+
+			let start = (this.page - 1) * this.rpp;
+			const selectedFields = fields ? fields : '*';
+
+	  
+		  const query = `SELECT ${selectedFields} FROM ${this.table} WHERE ${conditions} ${this.orderby} LIMIT ${this.rpp} OFFSET ${start}`;
+		  console.log(query);
+		  const result = await this.executeQuery(query);
+			
+		  return result.length > 0
+			? result 
+			: null;
+		} catch (error: any) {
+		  return { status: 500, message: error.message, data: null };
+		}
+	  }
 	  
 
 	/**

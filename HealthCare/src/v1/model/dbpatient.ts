@@ -1,7 +1,7 @@
 import { QueryResult } from 'pg';
 import { Functions } from "../library/functions";
 import { Appdb } from './appdb';
-
+import { connection } from '../library/connection';
 const functions=new Functions();
 
 export interface Patient {
@@ -17,15 +17,44 @@ export interface Patient {
     
 }
 
-class PatientModel extends Appdb {
-  
+class PatientModel extends Appdb { 
+  private connectionObj: connection;
+ 
   constructor() {
     super();
+    this.connectionObj = new connection();
+    this.connectionObj.connect();
     this.table = 'patient';
     this.uniqueField = 'patient_id';
     this.findUserByEmail='email';
+
+    
   } 
 
+  async getAllDoctorOfParticularHospital(hospital_id: number): Promise<any> {
+    let client;
+  
+    try {
+      client = await this.connectionObj.getConnection();
+      let start = (this.page - 1) * this.rpp;
+  
+      const result = await client.query(`
+        SELECT d.speciality, json_agg(json_build_object('first_name', d.first_name, 'last_name', d.last_name, 'gender', d.gender,
+        'phone_number', d.phone_number, 'email', d.email, 'fees', d.fees)) as doctors
+        FROM doctorhospital dh
+        JOIN doctor d ON dh.doctor_id = d.doctor_id
+        WHERE dh.hospital_id = $1
+        GROUP BY d.speciality
+        ORDER BY d.speciality, MIN(d.fees)
+        LIMIT $2 OFFSET $3`, [hospital_id, this.rpp, start]);
+  
+      return result.rows;
+    } catch (error) {
+      throw error;
+    } 
+    
+  }
+  
 
 //   async getAllPatients(pageSize: number, offset: number): Promise<{ error: boolean; message: string; data: any }> {
 //     try {

@@ -51,7 +51,9 @@ export function validatesignUpHospital(req: any, res: any, next: any) {
         address: Joi.string().trim().required(),
         phone_number: Joi.string().trim().required(),
         email: Joi.string().trim().email().required(),
-        password: Joi.string().required()
+        password: Joi.string().required(),
+        city:Joi.string().required(),
+        state:Joi.string().required()
     });
     let validationsObj = new validations();
     if (!validationsObj.validateRequest(req, res, next, schema)) {
@@ -124,6 +126,8 @@ export async function signUp(req: Request, res: Response, role: string): Promise
           hospital_name: req.body.hospital_name,
           address: req.body.address,
           phone_number: req.body.phone_number,
+          city: req.body.city,
+          state: req.body.state
         } as Hospital;
         userQuery = await HospitalModel.createRecord(newUser);
         break;
@@ -202,25 +206,37 @@ export async function login(req: Request, res: Response): Promise<Response<any, 
           return res.status(400).json({ error: true, message: 'Invalid role specified', data: null });
       }
   
-      const user: any[] | null = await userModel.getUserByEmail(email);
-  
-      if (!user) {
-        return res.status(404).json({ error: true, message: 'User not found', data: null });
+    
+      const user: any = await userModel.getUserByCriteria({ email: email },'');
+
+      console.log('User:', user);
+
+      if (!user || user.length === 0) {
+          return res.status(404).json({ error: true, message: 'User not found', data: null });
       }
-   
-      // Compare hashed password
-      const isMatch = await bcrypt.compare(password, user[0].password);
-  
-      if (isMatch) {
-        if (user && user[0][findUserByTableID] !== undefined) {
-          const token = generateToken({ email, role, user_id: user[0][findUserByTableID] });
-          return res.json({ error: false, message: 'Login successful', data: { token } });
-        } else {
-          return res.json({ error: true, message: 'Login Unsuccessful', data: null });
-        }
+
+      const userData = user[0];
+
+      // Check if userData has the 'password' property
+      if (userData && 'password' in userData) {
+          const isMatch = await bcrypt.compare(password, userData.password);
+
+          if (isMatch) {
+              // Rest of your code for successful login
+              if (userData[findUserByTableID] !== undefined) {
+                  const token = generateToken({ email, role, user_id: userData[findUserByTableID] });
+                  return res.json({ error: false, message: 'Login successful', data: { token } });
+              } else {
+                  return res.json({ error: true, message: 'Login Unsuccessful', data: null });
+              }
+          } else {
+              return res.status(401).json({ error: true, message: 'Password is incorrect', data: null });
+          }
       } else {
-        return res.status(401).json({ error: true, message: 'Password is incorrect', data: null });
+          console.log('Unexpected user structure:', userData);
+          return res.status(500).json({ error: true, message: 'Unexpected user structure', data: null });
       }
+
     } catch (error) {
       console.error('Error in login:', error);
       return res.status(500).json({ error: true, message: 'Internal Server Error', data: null });

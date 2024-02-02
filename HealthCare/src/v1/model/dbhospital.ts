@@ -9,6 +9,8 @@ export interface Hospital {
      hospital_id ?:bigint,
      hospital_name:string,
      address:string,
+     city:string,
+     state:string,
      password:string,
      email:string,
      phone_number:string

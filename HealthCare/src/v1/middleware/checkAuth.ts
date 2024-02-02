@@ -32,7 +32,7 @@ export function checkAuth(req: Request, res: Response, next: NextFunction): void
     role:decoded.role
     // Other properties from decoded if needed
   };
- console.log("req:"+(req as any).user.user_id);
+  console.log("req:"+(req as any).user.user_id);
   next();
 }
 
@@ -40,7 +40,7 @@ export const checkAccess = (requiredRole: string) => async (req: Request, res: R
     const user_role = (req as any).user.role;
   
     console.log(user_role);
-    
+    console.log("checkaccess"+(req as any).user.user_id);
 
     if (!user_role || user_role !== requiredRole) {
         const errorMessage = 'Forbidden - Insufficient permissions';
