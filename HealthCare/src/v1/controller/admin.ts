@@ -1,3 +1,4 @@
+/*200 for success, 404 for not found, 400 for bad request, */
 import { Request, Response } from 'express';
 import express from "express";
 import adminModel,{Admin}  from '../model/dbadmin';
@@ -12,7 +13,6 @@ const appdb=new Appdb();
 const adminRouter = express.Router();
 
 adminRouter.post('/signup', validatesignUpAdmin,signup);
-
 adminRouter.post('/signin',loginSchema,login);
 
 export default adminRouter;
