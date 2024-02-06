@@ -64,7 +64,7 @@ export class db {
 	 * @returns array
 	 */
 	select(table: string, fields: string, where: string, orderby: string, limit: string) {
-		let query = 'SELECT ' + fields + ' FROM ' + table + ' ' + where + ' ' + orderby + ' ' + limit;
+		let query = 'SELECT ' + fields + ' FROM ' + table + ' '  + where + ' ' + orderby + ' ' + limit;
 		console.log(query);
 		return this.executeQuery(query);
 	}
@@ -145,32 +145,24 @@ export class db {
 	// }
 
 
-	// selectRecordByEmail(email: string, fields = '*') {
-
-	// 	return this.select(this.table, fields, `WHERE ${this.findUserByEmail} = '${email}'`, this.orderby, this.limit);
-	// }
-
 	async selectRecord(data: any, fields?: string) {
-		try {
-			// Build WHERE clause based on id and additional conditions from data
-			const conditions = Object.entries({ ...data })
-				.map(([key, value]) => `${key} = '${value}'`)
-				.join(' AND ');
+		// Build WHERE clause based on id and additional conditions from data
+		const conditions = Object.entries({ ...data })
+			.map(([key, value]) => `${key} = '${value}'`)
+			.join(' AND ');
 
-			let start = (this.page - 1) * this.rpp;
-			const selectedFields = fields ? fields : '*';
+		let start = (this.page - 1) * this.rpp;
+		const selectedFields = fields ? fields : '*';
 
 
-			const query = `SELECT ${selectedFields} FROM ${this.table} WHERE ${conditions} ${this.orderby} LIMIT ${this.rpp} OFFSET ${start}`;
-			console.log(query);
-			const result = await this.executeQuery(query);
+		const query = `SELECT ${selectedFields} FROM ${this.table} WHERE ${conditions} ${this.orderby} LIMIT ${this.rpp} OFFSET ${start}`;
+		console.log(query);
+		const result = await this.executeQuery(query);
 
-			return result.length > 0
-				? result
-				: null;
-		} catch (error: any) {
-			return { status: 500, message: error.message, data: null };
-		}
+		return result.length > 0
+			? result
+			: null;
+
 	}
 
 	async selectdynamicQuery(selectFields: string, fromTable: string, whereCondition: string, limitValue: number, offsetValue: number) {
@@ -181,7 +173,13 @@ export class db {
 	}
 
 	async updateDynamicQuery(setValues: string, whereCondition: string) {
-		const query = `UPDATE ${this.table} SET ${setValues} WHERE ${whereCondition} RETURNING *`;
+		const query = `UPDATE ${this.table} SET ${setValues} WHERE ${whereCondition} `;
+		console.log(query);
+		return this.executeQuery(query);
+	}
+
+	async updateDynamicQueryWithoutWhere(setValues: string) {
+		const query = `UPDATE ${this.table} SET ${setValues}  `;
 		console.log(query);
 		return this.executeQuery(query);
 	}
@@ -237,7 +235,8 @@ export class db {
 	 * @param where where condition
 	 */
 	async selectCount(table: string, uniqueField: string, where: string) {
-		let query: string = 'SELECT count(' + uniqueField + ') as cnt FROM ' + table + ' ' + where;
+		let query: string = 'SELECT count(' + uniqueField + ') as cnt FROM ' + table + ' ' + 'WHERE ' + where;
+		console.log(query);
 		let result: any[] = await this.executeQuery(query);
 		return result.length > 0 ? result[0].cnt : 0;
 	}

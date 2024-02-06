@@ -43,7 +43,7 @@ function validateUpdateAppointment(req: any, res: any, next: any) {
 function validateincomeOfThatDay(req: any, res: any, next: any) {
 
   const schema = Joi.object({
-    date: Joi.date().required(),
+    income_date: Joi.date().required(),
   });
 
   let validationsObj = new validations();
@@ -65,7 +65,7 @@ async function signup(req: Request, res: Response): Promise<Response<any, Record
       return signUp(req, res, role);
     }
     else {
-      return res.status(404).json({ error: true, message: 'User Found', data: null });
+      return res.send(functions.output(500, 'User Found', null));
     }
   }
   catch (error) {
@@ -81,7 +81,10 @@ async function allPatientOfParticularDoctor(req: Request, res: Response): Promis
     const doctor_id = (req as any).user.user_id;
 
     const patientDetails = await DoctorModel.allPatientOfParticularDoctor(doctor_id);
-    return res.json({ error: false, message: 'Doctor details retrieved successfully', data: patientDetails });
+    if (!patientDetails) {
+      return res.send(functions.output(404, 'Patients not found', null));
+    }
+    return res.send(functions.output(200, 'Doctor details retrieved successfully', patientDetails));
 
   }
   catch (error) {
@@ -95,7 +98,6 @@ async function updateAppointment(req: Request, res: Response): Promise<Response<
   try {
     const { appointment_id, appointment_fee, Disease, appointment_status } = req.body;
 
-    const whereClause = `WHERE appointment_id = ${appointment_id}`;
     const appointmentData = {
       appointment_fee,
       Disease,
@@ -104,11 +106,11 @@ async function updateAppointment(req: Request, res: Response): Promise<Response<
 
 
     const result = await AppointmentModel.recordUpdate(appointment_id, appointmentData);
-    if (result.status === 404) {
+    if (!result) {
       return res.status(result.status).json({ error: true, message: result.message, data: null });
     }
 
-    return res.json({ error: false, message: 'Appointment updated successfully', data: result.data });
+    return res.send(functions.output(200, 'Appointment updated successfully', result.data));
   } catch (error) {
     console.error('Error updating appointment:', error);
     return res.send(functions.output(500, 'Internal Server Error', null));
@@ -118,11 +120,21 @@ async function updateAppointment(req: Request, res: Response): Promise<Response<
 
 async function incomeOfThatDay(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
   try {
-    const { date } = req.body;
+    const { income_date } = req.body;
+    console.log(income_date);
     const doctor_id = (req as any).user.user_id;
-    const incomeDoctor = await DoctorModel.incomeOfThatDay(date, doctor_id);
 
-    return res.json({ error: false, message: 'Imcome on that day', data: incomeDoctor });
+    const formattedDate = income_date.toISOString().split('T')[0];
+
+    const incomeDoctor = await DoctorModel.incomeOfThatDay(formattedDate, doctor_id);
+    console.log(incomeDoctor);
+
+    if (!incomeDoctor) {
+      return res.send(functions.output(404, 'Income Of That Day not found', null));
+    }
+
+    return res.send(functions.output(200, 'Income on that day', incomeDoctor));
+
   } catch (error) {
     console.error('Error in retrieving doctor details:', error);
     return res.send(functions.output(500, 'Internal Server Error', null));
@@ -136,10 +148,14 @@ async function todaysAppointment(req: Request, res: Response): Promise<Response<
     const today = new Date();
     const formattedDate = today.toISOString().split('T')[0];
 
-    const doctorDetails = await AppointmentModel.getUserByCriteria({ appointment_date: formattedDate, doctor_id: doctor_id }, 'ORDER BY appointment_time');
-    console.log(doctorDetails);
+    const PatientDetails = await AppointmentModel.getUserByCriteria({ appointment_date: formattedDate, doctor_id: doctor_id }, 'ORDER BY appointment_time');
 
-    return res.json({ error: false, message: 'Hospital details retrieved successfully', data: doctorDetails });
+    if (!PatientDetails) {
+      return res.send(functions.output(404, 'Patients not found', null));
+    }
+
+    return res.send(functions.output(200, 'Hospital details retrieved successfully', PatientDetails));
+
   } catch (error) {
     console.error('Error in retrieving doctor details:', error);
     return res.send(functions.output(500, 'Internal Server Error', null));

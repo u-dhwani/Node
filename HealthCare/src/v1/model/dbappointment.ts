@@ -3,7 +3,6 @@ import { Functions } from "../library/functions";
 import { Appdb } from './appdb';
 
 const functions=new Functions();
-
 export interface Appointment {
     appointment_id?: number;
     patient_id?: number;
@@ -24,9 +23,6 @@ class AppointmentModel extends Appdb {
     this.uniqueField = 'appointment_id';
     
   }
-
-  
-
 }
 
 export default new AppointmentModel();

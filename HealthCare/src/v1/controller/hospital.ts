@@ -12,6 +12,7 @@ import ClaimModel, { Claim } from '../model/dbclaim';
 import PatientModel from '../model/dbpatient';
 import PatientAdmitModel, { PatientAdmit } from '../model/dbpatientadmit';
 import PatientProductModel, { PatientProduct } from '../model/dbpatientproduct';
+import PatientBillingModel, { PatientBilling } from "../model/dbpatientbilling";
 import InsurancePlanModel, { InsurancePlan } from "../model/dbinsuranceplan";
 import ProductModel from '../model/dbproducts';
 
@@ -27,7 +28,8 @@ hospitalRouter.post('/addDoctor', checkAuth, checkAccess('hospital'), validatead
 hospitalRouter.post('/admit', checkAuth, checkAccess('hospital'), validatepatientAdmit, patientAdmit);
 hospitalRouter.get('/listadmitpatients', checkAuth, checkAccess('hospital'), listPatientsAdmitted);
 hospitalRouter.post('/patient/product', checkAuth, checkAccess('hospital'), validateaddProductsUsedByPatient, addProductsUsedByPatient);
-hospitalRouter.post('/dischargePatient', checkAuth, checkAccess('hospital'), dischargePatient);
+hospitalRouter.post('/dischargePatient', checkAuth, checkAccess('hospital'), validatedischargePatient, dischargePatient);
+
 
 export default hospitalRouter;
 
@@ -65,6 +67,20 @@ function validateaddProductsUsedByPatient(req: any, res: any, next: any) {
     email: Joi.string().email().required(),
     product_id: Joi.number().integer().required(),
     quantity: Joi.number().integer().min(1).required(),
+  });
+
+  let validationsObj = new validations();
+  if (!validationsObj.validateRequest(req, res, next, schema)) {
+    return false;
+  }
+}
+
+
+function validatedischargePatient(req: any, res: any, next: any) {
+
+  const schema = Joi.object({
+    patient_id: Joi.number().integer().required(),
+
   });
 
   let validationsObj = new validations();
@@ -132,11 +148,14 @@ async function patientAdmit(req: Request, res: Response): Promise<Response<any, 
       return res.status(404).json({ error: true, message: 'Error while inserting in Patient Admit', data: null });
 
     }
-    // return res.status(200).json({ error: false, message: 'Patient Admitted', data: null });
+
     else {
 
       const getInsuranceCompanyID = await InsurancePlanModel.getUserByCriteria({ insurance_plan_id: insurance_plan_id }, '');
 
+      if (!getInsuranceCompanyID) {
+        return res.send(functions.output(500, 'Error in finding Insurance Company', null));
+      }
       const insurance_company_id: bigint | undefined = getInsuranceCompanyID[0]?.insurance_company_id;
 
       const today = new Date();
@@ -177,8 +196,11 @@ async function listPatientsAdmitted(req: Request, res: Response): Promise<Respon
     const hospital_id = (req as any).user.user_id;
 
     const patientAdmitDetails = await PatientAdmitModel.getUsers(hospital_id, 'hospital_id');
+    if (!patientAdmitDetails) {
+      return res.send(functions.output(500, 'Patient Not Found', null));
+    }
 
-    return res.json({ error: false, message: 'Patients admitted retrieved successfully', data: patientAdmitDetails });
+    return res.send(functions.output(200, 'Patients admitted retrieved successfully', patientAdmitDetails));
   } catch (error) {
     console.error('Error in retrieving doctor details:', error);
     return res.send(functions.output(500, 'Internal Server Error', null));
@@ -186,70 +208,155 @@ async function listPatientsAdmitted(req: Request, res: Response): Promise<Respon
 }
 
 async function addProductsUsedByPatient(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
-  const { email, product_id, quantity } = req.body;
-  const patientDetails = await PatientModel.getUserByCriteria({ email: email }, '');
 
-  if (!patientDetails) {
-    return res.status(404).json({ error: true, message: 'Patient Not Found', data: null });
+  try {
+    const { email, product_id, quantity } = req.body;
+    const patientDetails = await PatientModel.getUserByCriteria({ email: email }, '');
+
+    if (!patientDetails) {
+      return res.status(404).json({ error: true, message: 'Patient Not Found', data: null });
+    }
+
+    const patient_id: bigint | undefined = patientDetails[0]?.patient_id;
+
+    if (typeof patient_id === 'number') {
+      const admit_id = await PatientAdmitModel.latestAdmitId(patient_id);
+
+      if (!admit_id) {
+        return res.send(functions.output(500, 'Admit_ID Not found', null));
+      }
+      const patient_admit_id = admit_id.length > 0 ? admit_id[0].patient_admit_id : undefined;
+
+      const newEntry: PatientProduct = {
+        patient_admit_id,
+        product_id,
+        quantity
+      }
+
+      const checkQuantity = await ProductModel.checkandUpdateQuantity(product_id, quantity);
+      if (checkQuantity === 0) {
+        return res.status(404).json({ error: true, message: 'Product Quantity is more than the available quantity', data: null });
+
+      }
+      const addProduct = await PatientProductModel.createRecord(newEntry);
+
+      if (!addProduct) {
+        return res.send(functions.output(500, 'Product not added in the list', null));
+      }
+      const updateBillingAmount = await PatientAdmitModel.updateBillingAmount(patient_admit_id);
+
+      if (!updateBillingAmount) {
+        return res.send(functions.output(500, 'Billing Amount not updated', null));
+      }
+
+      return res.send(functions.output(200, 'Amount has been updated', updateBillingAmount));
+    }
   }
-
-  const patient_id: bigint | undefined = patientDetails[0]?.patient_id;
-
-  if (typeof patient_id === 'number') {
-    const admit_id = await PatientAdmitModel.latestAdmitId(patient_id);
-    const patient_admit_id = admit_id.length > 0 ? admit_id[0].patient_admit_id : undefined;
-
-    const newEntry: PatientProduct = {
-      patient_admit_id,
-      product_id,
-      quantity
-    }
-
-    const checkQuantity = await ProductModel.checkandUpdateQuantity(product_id, quantity);
-    if (checkQuantity === 0) {
-      return res.status(404).json({ error: true, message: 'Product Quantity is more than the available quantity', data: null });
-
-    }
-    const addProduct = await PatientProductModel.createRecord(newEntry);
-    const updateBillingAmount = await PatientAdmitModel.updateBillingAmount(patient_admit_id);
-    console.log(updateBillingAmount);
-    return res.status(404).json({ error: false, message: 'Amount has been updated', data: updateBillingAmount });
+  catch (error) {
+    console.error('Error in retrieving doctor details:', error);
+    return res.send(functions.output(500, 'Internal Server Error', null));
   }
 }
 
 async function dischargePatient(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
 
-  const { patient_id } = req.body;
+  try {
+    const { patient_id } = req.body;
 
-  const today = new Date();
-  const formattedDate = today.toISOString().split('T')[0];
-  const hours = today.getHours();
-  const minutes = today.getMinutes();
-  const seconds = today.getSeconds();
+    const today = new Date();
+    const formattedDate = today.toISOString().split('T')[0];
+    const hours = today.getHours();
+    const minutes = today.getMinutes();
+    const seconds = today.getSeconds();
 
-  const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-  const patientAdmit = await PatientAdmitModel.getUserByCriteria({ patient_id: patient_id }, '');
+    const patientAdmit = await PatientAdmitModel.getUserByCriteria({ patient_id: patient_id }, '');
+    if (!patientAdmit) {
+      return res.send(functions.output(500, 'Patient not found in Admit', null));
+    }
 
-  const patient_admit_id: bigint | undefined = patientAdmit[0]?.patient_admit_id;
+    const patient_admit_id: bigint | undefined = patientAdmit[0]?.patient_admit_id;
 
-  if (typeof patient_admit_id === 'number') {
-    const dischargeDate = {
-      discharge_date: formattedDate,
-      discharge_time: formattedTime
-    };
+    if (typeof patient_admit_id === 'number') {
+      const dischargeDate = {
+        discharge_date: formattedDate,
+        discharge_time: formattedTime
+      };
 
-    const discharge_date = await PatientAdmitModel.recordUpdate(patient_admit_id, dischargeDate);
+      const discharge_date = await PatientAdmitModel.recordUpdate(patient_admit_id, dischargeDate);
 
-    const updateBillingAmount = await PatientAdmitModel.updateBillingAmount(patient_admit_id);
+      if (!discharge_date) {
+        return res.send(functions.output(500, 'Discharge Date Not Found', null));
+      }
 
-    const updateclaimAmount = await ClaimModel.updateAmountinClaim(patient_admit_id);
+      const updateBillingAmount = await PatientAdmitModel.updateBillingAmount(patient_admit_id);
 
-    
+      if (!updateBillingAmount) {
+        return res.send(functions.output(500, 'Billing Amount not found', null));
+      }
 
-    return res.json({ error: false, message: 'Doctor Association created successfully', data: { updateclaimAmount } });
+      const updateclaimAmount = await ClaimModel.updateAmountinClaim(patient_admit_id);
+
+      if (!updateclaimAmount) {
+        return res.send(functions.output(500, 'Claim amount not been updated from admit table', null));
+      }
+
+      const getClaimId = await ClaimModel.getUserByCriteria({ admit_id: patient_admit_id }, '');
+
+      if (!getClaimId) {
+        return res.send(functions.output(500, 'Claim not found', null));
+      }
+
+      const claim_id: bigint | undefined = getClaimId[0]?.claim_id;
+
+      let claimAmount,payableAmount;
+      if (getClaimId[0].total_amount > getClaimId[0].claim_amount){
+        claimAmount = getClaimId[0].claim_amount;
+        payableAmount = getClaimId[0].claim_amount - claimAmount;
+      }
+      else{
+        claimAmount = getClaimId[0].total_amount;
+        payableAmount = 0.0;
+      }
+
+     
+      if (typeof claim_id === 'number') {
+        const createBill: PatientBilling = {
+          patient_id,
+          admit_id: patient_admit_id,
+          claim_id,
+          billing_date: formattedDate,
+          billing_total_amount: getClaimId[0].claim_amount,
+          claim_amount: claimAmount,
+          payable_amount: payableAmount,
+          payment_status: "Pending"
 
 
+        }
+
+        const billcreated = PatientBillingModel.createRecord(createBill);
+
+        if (!billcreated) {
+          return res.send(functions.output(500, 'Patient Bill Not Created', null));
+        }
+
+        const patientadmitdelete = PatientAdmitModel.deleteRow(patient_admit_id);
+
+        if (!patientadmitdelete) {
+          return res.send(functions.output(500, 'Patient details from admit table not deleted', null));
+        }
+        return res.send(functions.output(200, 'Bill Created ', billcreated));
+
+
+      }
+
+    }
+
+  }
+  catch (error) {
+    console.error('Error in retrieving doctor details:', error);
+    return res.send(functions.output(500, 'Internal Server Error', null));
   }
 
 
@@ -279,17 +386,18 @@ async function addDoctor(req: Request, res: Response): Promise<Response<any, Rec
 
       const associationAlreadyPresent = await DoctorHospitalModel.getUserByCriteria({ doctor_id: doctors[0].doctor_id, hospital_id: hospital_id }, '');
       if (associationAlreadyPresent !== null && associationAlreadyPresent.length > 0) {
-        //return res.json({ error: false, message: 'Doctor Hospital Association already present', data: { associationAlreadyPresent } });
 
         res.send(functions.output(200, 'Doctor Hospital Association already present', associationAlreadyPresent));
         return false;
       }
       const doctorAssociation = await DoctorHospitalModel.createRecord(newUser);
+      if (!doctorAssociation) {
+        return res.send(functions.output(500, 'Doctor - Hospital Association not created', null));
+      }
 
-      return res.json({ error: false, message: 'Doctor Association created successfully', data: { doctorAssociation } });
-
+      return res.send(functions.output(200, 'Doctor Association created successfully', doctorAssociation));
     } else {
-      return res.json({ error: false, message: 'Doctor_id is undefined', data: null });
+      return res.send(functions.output(404, 'Doctor_id is undefined', null));
 
     }
 

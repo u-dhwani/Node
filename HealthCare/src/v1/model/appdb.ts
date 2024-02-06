@@ -1,68 +1,92 @@
+import { Response } from 'express';
 import { db } from "../library/db";
 import { Functions } from "../library/functions";
-import { QueryResult } from 'pg';
-import { Patient } from "./dbpatient";
-import { Request, Response } from 'express';
-import express from "express";
 
-const functions=new Functions();
+const functions = new Functions();
+
+/**
+ * Interface representing a condition for filtering records.
+ */
 export interface Condition {
 	columnName: string;
 	value: any;
 }
 
+/**
+ * Database access class for application.
+ */
 export class Appdb extends db {
-	
 	constructor() {
 		super();
 	}
-	
+
+	/**
+   * Creates a new record in the database.
+   * @param recordData Data of the record to be created.
+   * @returns The created record or null if creation fails.
+   */
 	async createRecord<T>(recordData: T): Promise<Response<any, Record<string, any>> | any> {
-		try {
-		  const result = await this.insertRecord(recordData);
-			
-		  if (!result) {
-			return { status: 500, message: `Something went wrong while inserting ${this.table}`, data: null };
-		  } else {
+		const result = await this.insertRecord(recordData);
+		if (!result) {
+			return null;
+		} else {
 			return result;
-		  }
-	  
-		} catch (error: any) {
-		  return { status: 500, message: `Error creating ${this.table}`, data: null };
-		}
-	  }
-	  
-	  async getUserByCriteria(criteria: Record<string, any>,orderBy:string): Promise<Response<any, Record<string, any>> | any> {
-		try {
-			this.orderby=orderBy;
-			const result = await this.selectRecord(criteria);
-			return result || null;
-	
-		} catch (error: any) {
-			return { status: 500, message: error.message, data: null };
 		}
 	}
 
+
+	/**
+	 * Retrieves user records based on specified criteria.
+	 * @param criteria Criteria for filtering records.
+	 * @param orderBy Column to order the results by.
+	 * @returns An array of user records or null if no records found.
+	 */
+	async getUserByCriteria(criteria: Record<string, any>, orderBy: string): Promise<Response<any, Record<string, any>> | any> {
+
+		this.orderby = orderBy;
+		const result = await this.selectRecord(criteria);
+		return result || null;
+	}
+
+
+	/**
+	* Retrieves user records by ID.
+	* @param id User ID.
+	* @param conditionField Field to condition the query.
+	* @returns An array of user records or null if no records found.
+	*/
 	async getUsers(id: number, conditionField: string) {
-		        this.where = " WHERE "+conditionField+"= "+id;
-		        let results: any[] = await this.listRecords("*");
-		        return results;
+		this.where = conditionField + "= " + id;
+		let results: any[] = await this.listRecords("*");
+		return results;
 	}
 
-	 
-	  
-	  async recordUpdate(id: number, data: any): Promise<Response<any, Record<string, any>> | any> {
-		try {
-		  const result = await this.updateRecord(id, data);
-		  return result > 0 ? { status: 200, message: 'Record updated successfully', data: result } : { status: 404, message: 'Record not found', data: null };
-		} catch (error: any) {
-		  return { status: 500, message: error.message, data: null };
-		}
-	  }
+	/**
+	 * Updates a record in the database by ID.
+	 * @param id The ID of the record to update.
+	 * @param data The data to update the record with.
+	 * @returns The number of records updated or null if no records found.
+	 */
+	async recordUpdate(id: number, data: any): Promise<Response<any, Record<string, any>> | any> {
 
-	  
-	  
-	 }
+		const result = await this.updateRecord(id, data);
+		return result > 0 ? result : null;
+
+	}
+
+
+	/**
+	 * Deletes a row from the database by ID.
+	 * @param id The ID of the row to delete.
+	 * @returns A promise that resolves to the deletion result.
+	 */
+	async deleteRow(id: number): Promise<any> {
+		const condition = "" + this.uniqueField + "=" + id;
+		const result = this.delete(this.table, condition);
+		return result;
+	}
+
+}
 
 
 export default new Appdb();

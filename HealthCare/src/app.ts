@@ -2,6 +2,7 @@ import cors from "cors";
 import dotenv from 'dotenv';
 import express from "express";
 import fileUpload from 'express-fileupload';
+import DoctorAvailabilityModel,{ DoctorAvailability } from "./v1/model/dbdoctoravailability";
 import path from "path";
 
 /*
@@ -18,6 +19,9 @@ app.use(cors());
 app.use(fileUpload({
 	createParentPath: true,
 }));
+
+
+DoctorAvailabilityModel.scheduleTask();
 
 /**
  * env variables Configuration

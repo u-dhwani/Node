@@ -28,6 +28,12 @@ class ClaimModel extends Appdb {
 
     }
 
+    /**
+     * Updates the claim amount in the claim table based on the billing amount from the patient admit table.
+     * @param patient_admit_id The ID of the patient admission record.
+     * @returns A promise that resolves to the result of the update operation.
+    */
+
     async updateAmountinClaim(patient_admit_id: number) {
         const setValues = "claim_amount = PA.billing_amount FROM PATIENT_ADMIT AS PA";
         const whereClause = " CLAIM.admit_id = PA.patient_admit_id AND CLAIM.admit_id = " + patient_admit_id;

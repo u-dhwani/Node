@@ -1,17 +1,16 @@
 /*200 for success, 404 for not found, 400 for bad request, */
 import express, { Request, Response } from "express";
-import { Functions } from '../library/functions';
-import { login, loginSchema, signUp, validatesignUpAdmin, validatesignUpInsuranceCompany } from '../middleware/UserAuthHandler';
-import { Appdb } from '../model/appdb';
-import HospitalModel, { Hospital } from "../model/dbhospital";
-import HospitalInsuranceModel, { HospitalInsurance } from "../model/dbhospitalinsurance";
-import InsuranceCompanyModel, { InsuranceCompany } from '../model/dbinsurancecompany';
-import { validations } from '../library/validations';
-import ClaimModel, { Claim } from '../model/dbclaim';
 import * as Joi from 'joi';
+import { Functions } from '../library/functions';
+import { validations } from '../library/validations';
+import { login, loginSchema, signUp, validatesignUpInsuranceCompany } from '../middleware/UserAuthHandler';
 import { checkAccess, checkAuth } from '../middleware/checkAuth';
+import { Appdb } from '../model/appdb';
+import ClaimModel from '../model/dbclaim';
+import HospitalModel from "../model/dbhospital";
+import HospitalInsuranceModel from "../model/dbhospitalinsurance";
+import InsuranceCompanyModel, { InsuranceCompany } from '../model/dbinsurancecompany';
 import InsurancePlanModel, { InsurancePlan } from "../model/dbinsuranceplan";
-import { add } from "date-fns";
 
 const functions = new Functions();
 const appdb = new Appdb();
@@ -22,7 +21,7 @@ insuranceCompanyRouter.post('/signup', validatesignUpInsuranceCompany, signup);
 insuranceCompanyRouter.post('/signin', loginSchema, login);
 insuranceCompanyRouter.post('/addPlan', checkAuth, checkAccess('Insurance Company'), validateaddInsurancePlan, addInsurancePlan);
 insuranceCompanyRouter.post('/addHospital', checkAuth, checkAccess('Insurance Company'), validateaddHospitals, addHospitals);
-insuranceCompanyRouter.post('/approveClaim', checkAuth, checkAccess('Insurance Company'), approveClaim);
+insuranceCompanyRouter.post('/approveClaim', checkAuth, checkAccess('Insurance Company'), validateapproveClaim, approveClaim);
 
 export default insuranceCompanyRouter;
 
@@ -53,6 +52,21 @@ function validateaddInsurancePlan(req: any, res: any, next: any) {
     return false;
   }
 }
+
+function validateapproveClaim(req: any, res: any, next: any) {
+
+  const schema = Joi.object({
+    claim_id: Joi.number().integer().positive().required(),
+    total_amount: Joi.number().precision(2).positive().required(),
+  });
+
+  let validationsObj = new validations();
+  if (!validationsObj.validateRequest(req, res, next, schema)) {
+    return false;
+  }
+}
+
+
 // ---------------------------------------------------------------------------
 
 async function signup(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
@@ -84,6 +98,9 @@ async function addInsurancePlan(req: Request, res: Response): Promise<Response<a
       duration
     }
     const addInsurance = await InsurancePlanModel.createRecord(newUser);
+    if(!addInsurance){
+      return res.send(functions.output(500, 'Error in adding insurance plan', null));
+    }
     return res.send(functions.output(200, 'Appointment created successfully', { addInsurance }));
 
   }
@@ -100,8 +117,10 @@ async function addHospitals(req: Request, res: Response): Promise<Response<any, 
     const { email } = req.body;
 
     const insurance_company_id = (req as any).user.user_id;
-    console.log("hello");
     const getHospital = await HospitalModel.getUserByCriteria({ email: email }, '');
+    if(!getHospital){
+      return res.send(functions.output(500, 'Error in getting Hospital', null));
+    }
     const hospital_id: bigint | undefined = getHospital[0]?.hospital_id;
 
     if (typeof hospital_id === 'number') {
@@ -129,6 +148,9 @@ async function approveClaim(req: Request, res: Response): Promise<Response<any, 
 
   const { claim_id, total_amount } = req.body;
   const approveClaim = await ClaimModel.recordUpdate(claim_id, { claim_status: "Approved", total_amount: total_amount });
+  if(!approveClaim){
+    return res.send(functions.output(500, 'Error in approving Claim', null));
+  }
   return res.send(functions.output(200, 'Claim Approved', approveClaim));
 
 

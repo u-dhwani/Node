@@ -15,14 +15,15 @@ export function checkAuth(req: Request, res: Response, next: NextFunction): void
   const token = req.header('Authorization');
 
   if (!token) {
-    res.status(401).json({ message: 'Unauthorized - No token provided' });
+
+    res.send(functions.output(401, 'Unauthorized - No token provided', null));
     return;
   }
 
   const decoded = verifyToken(token);
 
   if (!decoded) {
-    res.status(401).json({ message: 'Unauthorized - Invalid token' });
+    res.send(functions.output(401, 'Unauthorized - Invalid token', null));
     return;
   }
 
@@ -46,7 +47,9 @@ export const checkAccess = (requiredRole: string) => async (req: Request, res: R
     const errorMessage = 'Forbidden - Insufficient permissions';
     const outputData = functions.output(403, errorMessage, null);
 
-    res.status(403).json(outputData);
+    return res.send(functions.output(403, 'Authorized', outputData));
+
+
   } else {
     // User has the required role, proceed to the next middleware
     next();
