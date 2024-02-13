@@ -134,7 +134,7 @@ export async function signUp(req: Request, res: Response, role: string): Promise
           phone_number: req.body.phone_number,
         } as Patient;
         console.log(req.body.date_of_birth);
-        userQuery = await PatientModel.createRecord(newUser);
+        userQuery = await PatientModel.insertRecord(newUser);
         break;
 
       case 'hospital':
@@ -146,7 +146,7 @@ export async function signUp(req: Request, res: Response, role: string): Promise
           city: req.body.city,
           state: req.body.state
         } as Hospital;
-        userQuery = await HospitalModel.createRecord(newUser);
+        userQuery = await HospitalModel.insertRecord(newUser);
         break;
 
       case 'doctor':
@@ -160,7 +160,7 @@ export async function signUp(req: Request, res: Response, role: string): Promise
           phone_number: req.body.phone_number,
           fees: req.body.fees,
         } as Doctor;
-        userQuery = await DoctorModel.createRecord(newUser);
+        userQuery = await DoctorModel.insertRecord(newUser);
         break;
 
       case 'admin':
@@ -170,7 +170,7 @@ export async function signUp(req: Request, res: Response, role: string): Promise
           last_name: req.body.last_name,
           phone_number: req.body.phone_number,
         } as Admin;
-        userQuery = await AdminModel.createRecord(newUser);
+        userQuery = await AdminModel.insertRecord(newUser);
         break;
 
       case 'Insurance Company':
@@ -180,23 +180,21 @@ export async function signUp(req: Request, res: Response, role: string): Promise
           address: req.body.address,
           phone_number: req.body.phone_number,
         } as InsuranceCompany;
-        userQuery = await InsuranceCompanyModel.createRecord(newUser);
+        userQuery = await InsuranceCompanyModel.insertRecord(newUser);
         break;
 
 
       default:
-        return res.status(400).json({ error: true, message: 'Invalid role specified', data: null });
-    }
-
-    if (userQuery.status_code === '500') {
-      return res.json(functions.output(500, userQuery.status_message, null));
+        return res.send(functions.output(500, 'Invalid role specified', null));
     }
 
     const token = generateToken({ email: req.body.email, role, user_id: userQuery.data });
-    return res.json({ error: false, message: 'Signup successful', data: { token } });
+    return res.send(functions.output(200, 'SignUp Successfule', token));
+
   } catch (error) {
     console.error('Error in signup:', error);
-    return res.status(500).json({ error: true, message: 'Internal Server Error', data: null });
+    return res.send(functions.output(500, 'Internal Server Error', null));
+
   }
 }
 
@@ -236,7 +234,8 @@ export async function login(req: Request, res: Response): Promise<Response<any, 
         break;
 
       default:
-        return res.status(400).json({ error: true, message: 'Invalid role specified', data: null });
+        return res.send(functions.output(500, 'Invalid role specified', null));
+
     }
 
 
@@ -245,7 +244,8 @@ export async function login(req: Request, res: Response): Promise<Response<any, 
     console.log('User:', user);
 
     if (!user || user.length === 0) {
-      return res.status(404).json({ error: true, message: 'User not found', data: null });
+      return res.send(functions.output(404, 'User Not Found', null));
+
     }
 
     const userData = user[0];
@@ -258,21 +258,26 @@ export async function login(req: Request, res: Response): Promise<Response<any, 
         // Rest of your code for successful login
         if (userData[findUserByTableID] !== undefined) {
           const token = generateToken({ email, role, user_id: userData[findUserByTableID] });
-          return res.json({ error: false, message: 'Login successful', data: { token } });
+          return res.send(functions.output(200, 'Login Successful', token));
+
         } else {
-          return res.json({ error: true, message: 'Login Unsuccessful', data: null });
+          return res.send(functions.output(500, 'Login Unsuccessful', null));
+
         }
       } else {
-        return res.status(401).json({ error: true, message: 'Password is incorrect', data: null });
+        return res.send(functions.output(401, 'Password is incorrect', null));
+
       }
     } else {
       console.log('Unexpected user structure:', userData);
-      return res.status(500).json({ error: true, message: 'Unexpected user structure', data: null });
+      return res.send(functions.output(500, 'Unexpected user structure', null));
+
     }
 
   } catch (error) {
     console.error('Error in login:', error);
-    return res.status(500).json({ error: true, message: 'Internal Server Error', data: null });
+    return res.send(functions.output(500, 'Internal Server Error', null));
+
   }
 }
 

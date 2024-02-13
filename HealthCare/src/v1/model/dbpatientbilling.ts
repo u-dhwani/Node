@@ -26,7 +26,6 @@ class PatientBillingModel extends Appdb {
         this.uniqueField = 'patient_billing_id';
 
     }
-
 }
 
 export default new PatientBillingModel();

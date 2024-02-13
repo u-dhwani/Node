@@ -1,5 +1,5 @@
 import { connection } from './connection';
-import { Condition } from '../model/appdb';
+
 
 export class db {
 	public table: string = '';
@@ -13,7 +13,6 @@ export class db {
 	public limit: string = '';
 	public url: string = '';
 	public totalRecords: number = 0;
-	public findUserByEmail: string = '';
 
 	constructor() {
 
@@ -64,10 +63,13 @@ export class db {
 	 * @returns array
 	 */
 	select(table: string, fields: string, where: string, orderby: string, limit: string) {
-		let query = 'SELECT ' + fields + ' FROM ' + table + ' '  + where + ' ' + orderby + ' ' + limit;
+		let query = 'SELECT ' + fields + ' FROM ' + table + ' ' + where + ' ' + orderby + ' ' + limit;
 		console.log(query);
 		return this.executeQuery(query);
 	}
+
+
+
 
 	/**
 	 * Insert given data into given table. Given data should be key-value pair object with DB field name and it's value.
@@ -112,14 +114,19 @@ export class db {
 			}
 			if (data[key] == null) {
 				updatestring += key + "=''";
-			} else {
+
+			}
+			else if (typeof data[key] !== 'string') {
+				updatestring += `${key} = ${data[key]}`;
+			}
+			else {
 				data[key] = String(data[key]);
 				updatestring += key + "='" + data[key].replace(/'/g, "\''") + "'";
 			}
+
 		}
 
-		//let query = 'UPDATE ' + table + ' SET ' + updatestring + ' ' + where;
-		let query = `UPDATE ${table} SET ${updatestring} ${where} RETURNING *`;
+		let query = 'UPDATE ' + table + ' SET ' + updatestring + ' ' + where;
 
 		console.log(query);
 		return this.executeQuery(query);
@@ -132,6 +139,7 @@ export class db {
 	 */
 	delete(table: string, where: string) {
 		let query = 'DELETE FROM ' + table + ' ' + where;
+		console.log(query);
 		return this.executeQuery(query);
 	}
 
@@ -140,54 +148,15 @@ export class db {
 	 * @param id table unique id
 	 * @param fields DB fields
 	 */
-	// selectRecordBy(id: number, fields = '*') {
-	// 	return this.select(this.table, fields, 'WHERE ' + this.uniqueField + ' = ' + id, this.orderby, this.limit);
-	// }
-
-
-	async selectRecord(data: any, fields?: string) {
-		// Build WHERE clause based on id and additional conditions from data
-		const conditions = Object.entries({ ...data })
-			.map(([key, value]) => `${key} = '${value}'`)
-			.join(' AND ');
-
-		let start = (this.page - 1) * this.rpp;
-		const selectedFields = fields ? fields : '*';
-
-
-		const query = `SELECT ${selectedFields} FROM ${this.table} WHERE ${conditions} ${this.orderby} LIMIT ${this.rpp} OFFSET ${start}`;
-		console.log(query);
-		const result = await this.executeQuery(query);
-
-		return result.length > 0
-			? result
-			: null;
-
+	selectRecordBy(id: number, fields = '*') {
+		return this.select(this.table, fields, 'WHERE ' + this.uniqueField + ' = ' + id, this.orderby, this.limit);
 	}
 
-	async selectdynamicQuery(selectFields: string, fromTable: string, whereCondition: string, limitValue: number, offsetValue: number) {
-		const query = ` SELECT ${selectFields} FROM ${fromTable} WHERE ${whereCondition} LIMIT ${limitValue} OFFSET ${offsetValue}`;
-		console.log(query);
-		return this.executeQuery(query);
-
-	}
-
-	async updateDynamicQuery(setValues: string, whereCondition: string) {
-		const query = `UPDATE ${this.table} SET ${setValues} WHERE ${whereCondition} `;
-		console.log(query);
-		return this.executeQuery(query);
-	}
-
-	async updateDynamicQueryWithoutWhere(setValues: string) {
-		const query = `UPDATE ${this.table} SET ${setValues}  `;
-		console.log(query);
-		return this.executeQuery(query);
-	}
 
 	/**
-	 * Insert record into DB with given array
-	 * @param data key-value pair object
-	 */
+ * Insert record into DB with gŌiven array
+ * @param data key-value pair object
+ */
 	insertRecord(data: any) {
 		return this.insert(this.table, data);
 	}
@@ -235,7 +204,7 @@ export class db {
 	 * @param where where condition
 	 */
 	async selectCount(table: string, uniqueField: string, where: string) {
-		let query: string = 'SELECT count(' + uniqueField + ') as cnt FROM ' + table + ' ' + 'WHERE ' + where;
+		let query: string = 'SELECT count(' + uniqueField + ') as cnt FROM ' + table + ' ' + where;
 		console.log(query);
 		let result: any[] = await this.executeQuery(query);
 		return result.length > 0 ? result[0].cnt : 0;
@@ -250,3 +219,38 @@ export class db {
 		return totalpages;
 	}
 }
+
+
+// else {
+// 	data[key] = String(data[key]);
+// 	updatestring += key + "='" + data[key].replace(/'/g, "\''") + "'";
+// }
+
+
+// async selectRecord(data: any, fields?: string) {
+// 	// Build WHERE clause based on id and additional conditions from data
+// 	const conditions = Object.entries({ ...data })
+// 		.map(([key, value]) => `${key} = '${value}'`)
+// 		.join(' AND ');
+
+// 	let start = (this.page - 1) * this.rpp;
+// 	const selectedFields = fields ? fields : '*';
+
+
+// 	const query = `SELECT ${selectedFields} FROM ${this.table} WHERE ${conditions} ${this.orderby} LIMIT ${this.rpp} OFFSET ${start}`;
+// 	console.log(query);
+// 	const result = await this.executeQuery(query);
+
+// 	return result.length > 0
+// 		? result
+// 		: null;
+
+// }
+
+
+
+// async updateDynamicQuery(setValues: string, whereCondition: string) {
+// 	const query = `UPDATE ${this.table} SET ${setValues}  ${whereCondition} `;
+// 	console.log(query);
+// 	return this.executeQuery(query);
+// }

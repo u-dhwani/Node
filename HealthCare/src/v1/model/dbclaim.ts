@@ -34,12 +34,20 @@ class ClaimModel extends Appdb {
      * @returns A promise that resolves to the result of the update operation.
     */
 
-    async updateAmountinClaim(patient_admit_id: number) {
-        const setValues = "claim_amount = PA.billing_amount FROM PATIENT_ADMIT AS PA";
-        const whereClause = " CLAIM.admit_id = PA.patient_admit_id AND CLAIM.admit_id = " + patient_admit_id;
-        const result = this.updateDynamicQuery(setValues, whereClause);
+
+   
+
+    async updateAmountinClaim(patient_admit_id: number, billing_amount: number) {
+        const data = { claim_amount: billing_amount };
+        this.uniqueField = "CLAIM.admit_id";
+        //const whereClause = `WHERE CLAIM.admit_id = ${patient_admit_id}`; // Construct the WHERE clause
+        // const result = await this.update(this.table, data, whereClause); // Call update
+        const result = await this.updateRecord(patient_admit_id, data);
         return result;
+
+
     }
+
 }
 
 export default new ClaimModel();

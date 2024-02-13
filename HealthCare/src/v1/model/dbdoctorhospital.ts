@@ -16,7 +16,6 @@ class DoctorHospitalModel extends Appdb {
     this.table = 'doctorhospital';
     this.uniqueField = 'doctorhospital_id';
   }
-
 }
 
 export default new DoctorHospitalModel();

@@ -6,6 +6,6 @@ export const constants = {
     ************************************/
     PRODUCT_NAME: 'Core Framework',
     secret:'qwertyuiopasdfghjklzxcvbnm',
-    recordsPerPage : 10,
+  //  recordsPerPage : 10,
 };
 

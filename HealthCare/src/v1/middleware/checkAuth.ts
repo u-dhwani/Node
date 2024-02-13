@@ -2,6 +2,7 @@ import { Functions } from '../library/functions';
 import express, { Request, Response, NextFunction } from 'express';
 const functions = new Functions();
 import { constants } from "../constants";
+import * as Joi from 'joi';
 import { sign, verify } from 'jsonwebtoken';
 
 export interface TokenData {
@@ -44,11 +45,8 @@ export const checkAccess = (requiredRole: string) => async (req: Request, res: R
   console.log("checkaccess" + (req as any).user.user_id);
 
   if (!user_role || user_role !== requiredRole) {
-    const errorMessage = 'Forbidden - Insufficient permissions';
-    const outputData = functions.output(403, errorMessage, null);
-
-    return res.send(functions.output(403, 'Authorized', outputData));
-
+     return res.send(functions.output(403, 'UnAuthorized', null));
+   
 
   } else {
     // User has the required role, proceed to the next middleware
@@ -68,4 +66,18 @@ export function verifyToken(token: string): any {
   } catch (error) {
     return null;
   }
+}
+
+
+export function validatepage(req: any, res: any, next: any) {
+
+  const schema = Joi.object({
+    page: Joi.number().integer().positive().required()
+  });
+
+  const { error } = schema.validate({ page: req.query.page });
+  if (error) {
+    return res.send(functions.output(400, error.details[0].message, null))
+  }
+  next();
 }

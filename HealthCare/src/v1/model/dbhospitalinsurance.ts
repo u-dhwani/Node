@@ -19,7 +19,7 @@ class HospitalInsuranceModel extends Appdb {
     super();
     this.table = 'hospital_insurance';
     this.uniqueField = 'hospital_insurance_id';
-    this.findUserByEmail='email';
+    
   }
 
   }

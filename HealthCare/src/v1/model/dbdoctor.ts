@@ -24,29 +24,27 @@ class DoctorModel extends Appdb {
     super();
     this.table = 'doctor';
     this.uniqueField = 'doctor_id';
-    this.findUserByEmail = 'email';
+
   }
 
-  async allPatientOfParticularDoctor(doctor_id: number): Promise<any> {
-    let start = (this.page - 1) * this.rpp;
 
+  /**
+   * Retrieves all patients of a particular doctor.
+   * @param doctor_id The ID of the doctor.
+   * @returns A promise that resolves to the result of the query.
+   */
+  async allPatientOfParticularDoctor(doctor_id: number,page:number): Promise<any> {
     const selectFields = "p.first_name, p.last_name, p.date_of_birth, p.gender, p.phone_number, p.email, MAX(a.appointment_date) AS latest_appointment_date, MAX(a.appointment_time) AS latest_appointment_time ";
-    const fromTable = "patient p JOIN appointment a ON p.patient_id = a.patient_id";
-    const whereCondition = "a.appointment_status = 'Completed' AND doctor_id =" + doctor_id + " GROUP BY p.patient_id";
-    const limitValue = this.rpp;
-    const offsetValue = start;
-    const result = await this.selectdynamicQuery(selectFields, fromTable, whereCondition, limitValue, offsetValue)
-    return result;
-
-
-  }
-
-  async incomeOfThatDay(app_date: string, doctor_id: number): Promise<any> {
-    const selectFields = "hospital_id, SUM(appointment_fee) AS total_income";
-    const whereCondition = "doctor_id = " + doctor_id + " AND appointment_date = '" + app_date + "' GROUP BY hospital_id";
-    const result = await this.select('appointment', selectFields, whereCondition, '', '');
+    this.table = "patient p JOIN appointment a ON p.patient_id = a.patient_id";
+    this.where = "WHERE a.appointment_status = 'Completed' AND doctor_id =" + doctor_id + " GROUP BY p.patient_id";
+    this.rpp = 1;
+    this.page=page;
+    const result = await this.listRecords(selectFields);
     return result;
   }
+
+
+
 
 }
 

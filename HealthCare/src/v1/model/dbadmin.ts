@@ -20,7 +20,7 @@ class AdminModel extends Appdb {
     super();
     this.table = 'admin';
     this.uniqueField = 'admin_id';
-    this.findUserByEmail = 'email';
+
   }
 
   /**
@@ -31,7 +31,7 @@ class AdminModel extends Appdb {
 
   async countOfThatDisease(disease_name: string): Promise<any> {
 
-    const whereCondition = "LOWER(disease) LIKE '%" + disease_name + "%'";
+    const whereCondition = "WHERE LOWER(disease) LIKE '%" + disease_name + "%'";
     const result = await this.selectCount('appointment', '*', whereCondition);
     return result;
 
@@ -43,13 +43,17 @@ class AdminModel extends Appdb {
    * @returns The top five doctors with the highest total appointment fees.
    */
 
+
+
   async topFiveDoctorsAsPerAppointmentFees(): Promise<any> {
 
+
     const selectFields = "d.doctor_id, d.first_name, d.last_name, d.speciality, d.gender, d.address, d.phone_number, d.email, d.fees, SUM(a.appointment_fee) AS total_appointment_fees";
-    const fromTable = "doctor d JOIN appointment a ON d.doctor_id = a.doctor_id GROUP BY d.doctor_id ";
-    const order = "ORDER BY total_appointment_fees DESC";
-    const limit = "LIMIT 5";
-    const result = this.select(fromTable, selectFields, '', order, limit);
+    this.table = "doctor d JOIN appointment a ON d.doctor_id = a.doctor_id GROUP BY d.doctor_id ";
+    this.orderby = "ORDER BY total_appointment_fees DESC";
+    this.rpp = 5;
+    const result = this.listRecords(selectFields);
+    // const result = this.select(fromTable, selectFields, '', order, limit);
     return result;
   }
 
@@ -60,10 +64,12 @@ class AdminModel extends Appdb {
   */
   async topTenPatientsMaxClaim(): Promise<any> {
     const selectFields = "pb.patient_id, SUM(pb.billing_total_amount) AS total_billing_amount";
-    const fromTable = "patient_billing pb GROUP BY pb.patient_id";
-    const order = "ORDER BY total_billing_amount DESC";
-    const limit = "LIMIT 10";
-    const result = this.select(fromTable, selectFields, '', order, limit);
+    this.table = "patient_billing pb GROUP BY pb.patient_id";
+    this.orderby = "ORDER BY total_billing_amount DESC";
+    this.rpp = 10;
+
+    const result = this.listRecords(selectFields);
+    //  const result = this.select(fromTable, selectFields, '', order, limit);
     return result;
   }
 

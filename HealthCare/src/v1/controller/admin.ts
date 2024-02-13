@@ -3,7 +3,7 @@ import express, { Request, Response } from "express";
 import * as Joi from 'joi';
 import { Functions } from '../library/functions';
 import { validations } from '../library/validations';
-import { login, loginSchema, signUp, validatesignUpAdmin } from '../middleware/UserAuthHandler';
+import { signUp, validatesignUpAdmin } from '../middleware/UserAuthHandler';
 import { checkAccess, checkAuth } from '../middleware/checkAuth';
 import { Appdb } from '../model/appdb';
 import AdminModel, { Admin } from '../model/dbadmin';
@@ -14,12 +14,13 @@ const appdb = new Appdb();
 const adminRouter = express.Router();
 
 adminRouter.post('/signup', validatesignUpAdmin, signup);
-adminRouter.post('/signin', loginSchema, login);
 adminRouter.get('/disease', checkAuth, checkAccess('admin'), validatecountOfDisease, countOfDisease);
 adminRouter.get('/topFiveDoctors', checkAuth, checkAccess('admin'), topFiveDoctorsAsPerAppointmentFees);
 adminRouter.get('/maxClaim', checkAuth, checkAccess('admin'), topTenPatientsMaxClaim);
 export default adminRouter;
 
+
+// ---------------------------VALIDATIONS---------------------------------------
 
 function validatecountOfDisease(req: any, res: any, next: any) {
 
@@ -34,6 +35,8 @@ function validatecountOfDisease(req: any, res: any, next: any) {
   }
 }
 
+// ----------------------------------------------------------------------------------------
+
 
 async function signup(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
   try {
@@ -44,7 +47,7 @@ async function signup(req: Request, res: Response): Promise<Response<any, Record
       return signUp(req, res, role);
     }
     else {
-      return res.send(functions.output(404, 'User Found', null));
+      return res.send(functions.output(200, 'User Found', null));
     }
   }
   catch (error) {
@@ -54,17 +57,22 @@ async function signup(req: Request, res: Response): Promise<Response<any, Record
 }
 
 async function topFiveDoctorsAsPerAppointmentFees(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
-  const topFiveDoctorResult = await AdminModel.topFiveDoctorsAsPerAppointmentFees();
-  if (!topFiveDoctorResult) {
-    return res.send(functions.output(404, 'Top 5 doctors Not Found', null));
+  try {
+    const topFiveDoctorResult = await AdminModel.topFiveDoctorsAsPerAppointmentFees();
+    if (topFiveDoctorResult.length === 0) {
+      return res.send(functions.output(404, 'Top 5 doctors Not Found', null));
+    }
+    return res.send(functions.output(200, 'Top 5 doctors as per income', topFiveDoctorResult));
   }
-  return res.send(functions.output(200, 'Top 5 doctors as per income', topFiveDoctorResult));
-
+  catch (error) {
+    console.error('Error in signup:', error);
+    return res.send(functions.output(500, 'Internal Server Error', null));
+  }
 }
 
 async function topTenPatientsMaxClaim(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
   const maxClaim = await AdminModel.topTenPatientsMaxClaim();
-  if (!maxClaim) {
+  if (maxClaim.length === 0) {
     return res.send(functions.output(404, 'Top 10 Patients Not Found', null));
   }
   return res.send(functions.output(200, 'Top 10 Patients having maximum claim', maxClaim));

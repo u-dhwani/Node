@@ -20,9 +20,9 @@ class InsuranceCompanyModel extends Appdb {
     super();
     this.table = 'insurance_company';
     this.uniqueField = 'insurance_company_id';
-    this.findUserByEmail='email';
+    
   }
 
-  }
+}
 
 export default new InsuranceCompanyModel();

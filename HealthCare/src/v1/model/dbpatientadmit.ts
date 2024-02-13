@@ -15,6 +15,7 @@ export interface PatientAdmit {
   discharge_date?: string | null;
   discharge_time?: string | null;
   billing_amount?: number | null;
+  doctor_fees?: number | null;
 
 }
 
@@ -27,33 +28,63 @@ class PatientAdmitModel extends Appdb {
 
   }
 
+  /**
+  * Retrieves the latest admit ID for a patient.
+  * @param patient_id The ID of the patient.
+  * @returns A promise that resolves to the latest admit ID for the patient.
+  */
   async latestAdmitId(patient_id: number) {
 
-
-    let start = (this.page - 1) * this.rpp;
-    const whereCondition = "patient_id = " + patient_id + " ORDER BY admit_date DESC, admit_time DESC";
-    const limitValue = 1;
-    const offsetValue = 0;
-    const result = await this.selectdynamicQuery(this.uniqueField, this.table, whereCondition, limitValue, offsetValue)
-    console.log("latestadmitid" + result);
+    this.rpp = 1;
+    this.where = "WHERE patient_id = " + patient_id;
+    this.orderby = " ORDER BY admit_date DESC, admit_time DESC";
+    const result = await this.listRecords(this.uniqueField);
+    //const result = await this.select(this.table, this.uniqueField, whereCondition, '', limitValue);
     return result;
-
-
-  }
-
-  async updateBillingAmount(patient_admit_id: number) {
-
-    const setValues = "billing_amount = (SELECT SUM(products.price * patient_products_used.quantity) FROM patient_products_used JOIN products ON patient_products_used.product_id = products.products_id WHERE patient_products_used.patient_admit_id = patient_admit.patient_admit_id)";
-    const whereCondition = 'patient_admit_id= ' + patient_admit_id;
-
-    let result: any[] = await this.updateDynamicQuery(setValues, whereCondition);
-    return result;
-
 
   }
 
 
+  /**
+  * Updates the billing amount for a patient admission record.
+  * @param patient_admit_id The ID of the patient admission record.
+  * @returns A promise that resolves to the result of the update operation.
+  */
 
+
+  async updateBillingAmount(patient_admit_id: number, billing_amount: number) {
+
+
+
+    const data = { billing_amount: billing_amount };
+
+    // const whereCondition = `WHERE patient_admit_id = ${patient_admit_id}`;
+
+    let result: any[] = await this.updateRecord(patient_admit_id, data);
+    console.log("updatebillingamount:" + result);
+    return result;
+
+  }
+
+  async updateDoctorFeesInPatientAdmit(doctor_id: number, hospital_id: number, patient_id: number, doctor_fees: number) {
+
+    const setValues = {
+      doctor_fees: `doctor_fees + ${doctor_fees}`
+    }
+    //doctor_fees: "doctor_fees + " + doctor_fees
+
+
+    console.log(setValues);
+    const whereCondition = "WHERE patient_id = " + patient_id + " AND doctor_id = " + doctor_id + " AND hospital_id = " + hospital_id;
+
+    let result: any[] = await this.update(this.table, setValues, whereCondition);
+    console.log(result);
+    return result;
+
+
+
+
+  }
 }
 
 export default new PatientAdmitModel();

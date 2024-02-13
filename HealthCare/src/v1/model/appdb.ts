@@ -20,20 +20,13 @@ export class Appdb extends db {
 		super();
 	}
 
-	/**
-   * Creates a new record in the database.
-   * @param recordData Data of the record to be created.
-   * @returns The created record or null if creation fails.
-   */
-	async createRecord<T>(recordData: T): Promise<Response<any, Record<string, any>> | any> {
-		const result = await this.insertRecord(recordData);
-		if (!result) {
-			return null;
-		} else {
-			return result;
-		}
-	}
 
+	formatValue(value: any): string {
+		if (typeof value === 'string') {
+			return "'" + value + "'";
+		}
+		return value.toString();
+	}
 
 	/**
 	 * Retrieves user records based on specified criteria.
@@ -43,10 +36,25 @@ export class Appdb extends db {
 	 */
 	async getUserByCriteria(criteria: Record<string, any>, orderBy: string): Promise<Response<any, Record<string, any>> | any> {
 
-		this.orderby = orderBy;
-		const result = await this.selectRecord(criteria);
-		return result || null;
+		if (orderBy != '')
+			this.orderby = 'ORDER BY ' + orderBy;
+		let whereClause = '';
+		const keys = Object.keys(criteria);
+		if (keys.length > 0) {
+			whereClause += 'WHERE ';
+			keys.forEach((key, index) => {
+				whereClause += key + ' = ' + this.formatValue(criteria[key]);
+				if (index < keys.length - 1) {
+					whereClause += ' AND ';
+				}
+			});
+		}
+		this.where = whereClause;
+		const result = await this.allRecords('*');
+		//const result = await this.selectRecord(criteria);
+		return result ;
 	}
+
 
 
 	/**
@@ -55,25 +63,13 @@ export class Appdb extends db {
 	* @param conditionField Field to condition the query.
 	* @returns An array of user records or null if no records found.
 	*/
-	async getUsers(id: number, conditionField: string) {
-		this.where = conditionField + "= " + id;
-		let results: any[] = await this.listRecords("*");
-		return results;
+	async getUsers(id: number, conditionField: string,page:number) {
+		this.where = "WHERE " + conditionField + "= " + id;
+		this.rpp = 10;
+		this.page=page;
+		const result = await this.listRecords("*");
+		return result;
 	}
-
-	/**
-	 * Updates a record in the database by ID.
-	 * @param id The ID of the record to update.
-	 * @param data The data to update the record with.
-	 * @returns The number of records updated or null if no records found.
-	 */
-	async recordUpdate(id: number, data: any): Promise<Response<any, Record<string, any>> | any> {
-
-		const result = await this.updateRecord(id, data);
-		return result > 0 ? result : null;
-
-	}
-
 
 	/**
 	 * Deletes a row from the database by ID.
@@ -81,7 +77,7 @@ export class Appdb extends db {
 	 * @returns A promise that resolves to the deletion result.
 	 */
 	async deleteRow(id: number): Promise<any> {
-		const condition = "" + this.uniqueField + "=" + id;
+		const condition = "WHERE " + this.uniqueField + "=" + id;
 		const result = this.delete(this.table, condition);
 		return result;
 	}

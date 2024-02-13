@@ -10,10 +10,10 @@ export interface PatientInsurance {
     patient_id: number,
     insurance_plan_id: number,
     policy_number: string,
-    policy_buy_date: Date,
+    policy_buy_date: string,
     subscriber_first_name: string,
     subscriber_last_name: string,
-    subscriber_date_of_birth: Date,
+    subscriber_date_of_birth: string,
     subscriber_phone_number: string
 
 }
