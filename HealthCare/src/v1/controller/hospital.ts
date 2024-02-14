@@ -318,8 +318,7 @@ async function dischargePatient(req: Request, res: Response): Promise<Response<a
         return res.send(functions.output(500, 'Billing Amount not found', null));
       }
 
-      const getUpdatedBillingAmount = await PatientAdmitModel.getUserByCriteria({ patient_admit_id: patient_admit_id }, '',getPageNumber(req));
-
+      const getUpdatedBillingAmount= await PatientAdmitModel.selectRecordBy(patient_admit_id);
       const updateclaimAmount = await ClaimModel.updateAmountinClaim(patient_admit_id, getUpdatedBillingAmount.billing_amount);
 
       if (!updateclaimAmount) {

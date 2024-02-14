@@ -1,6 +1,5 @@
 import { connection } from './connection';
 
-
 export class db {
 	public table: string = '';
 	private connection: any = '';
