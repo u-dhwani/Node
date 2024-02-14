@@ -8,7 +8,7 @@ import DoctorModel, { Doctor } from '../model/dbdoctor';
 import HospitalModel, { Hospital } from '../model/dbhospital';
 import InsuranceCompanyModel, { InsuranceCompany } from '../model/dbinsurancecompany';
 import PatientModel, { Patient } from '../model/dbpatient';
-import { generateToken } from './checkAuth';
+import { generateToken, getPageNumber } from './checkAuth';
 const functions = new Functions();
 
 export function validatesignUpAdmin(req: any, res: any, next: any) {
@@ -239,7 +239,7 @@ export async function login(req: Request, res: Response): Promise<Response<any, 
     }
 
 
-    const user: any = await userModel.getUserByCriteria({ email: email }, '');
+    const user: any = await userModel.getUserByCriteria({ email: email }, '',getPageNumber(req));
 
     console.log('User:', user);
 

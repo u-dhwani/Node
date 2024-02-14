@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import * as Joi from 'joi';
 import { Functions } from '../library/functions';
 import { validations } from '../library/validations';
-import { checkAccess, checkAuth } from '../middleware/checkAuth';
+import { checkAccess, checkAuth,getPageNumber } from '../middleware/checkAuth';
 import { Appdb } from '../model/appdb';
 import AppointmentModel, { Appointment } from '../model/dbappointment';
 import DoctorModel from '../model/dbdoctor';
@@ -81,7 +81,7 @@ async function todaysAppointment(req: Request, res: Response): Promise<Response<
     const today = new Date();
     const formattedDate = today.toISOString().split('T')[0];
 
-    const PatientDetails = await AppointmentModel.getUserByCriteria({ appointment_date: formattedDate, doctor_id: doctor_id }, 'appointment_time');
+    const PatientDetails = await AppointmentModel.getUserByCriteria({ appointment_date: formattedDate, doctor_id: doctor_id }, 'appointment_time',getPageNumber(req));
 
     if (PatientDetails.length === 0) {
       return res.send(functions.output(404, 'Patients not found', null));
@@ -143,9 +143,9 @@ async function appointment(req: Request, res: Response): Promise<Response<any, R
 
     }
 
-    const doctor = await DoctorModel.getUserByCriteria({ doctor_id: doctor_id }, '');
-    const hospital = await HospitalModel.getUserByCriteria({ hospital_id: hospital_id }, '');
-    const patient = await PatientModel.getUserByCriteria({ patient_id: patient_id }, '');
+    const doctor = await DoctorModel.getUserByCriteria({ doctor_id: doctor_id }, '',getPageNumber(req));
+    const hospital = await HospitalModel.getUserByCriteria({ hospital_id: hospital_id }, '',getPageNumber(req));
+    const patient = await PatientModel.getUserByCriteria({ patient_id: patient_id }, '',getPageNumber(req));
 
 
     if (patient.length === 0 || doctor.length === 0 || hospital.length === 0) {

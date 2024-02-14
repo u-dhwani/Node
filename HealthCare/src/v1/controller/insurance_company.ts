@@ -4,7 +4,7 @@ import * as Joi from 'joi';
 import { Functions } from '../library/functions';
 import { validations } from '../library/validations';
 import { signUp, validatesignUpInsuranceCompany } from '../middleware/UserAuthHandler';
-import { checkAccess, checkAuth } from '../middleware/checkAuth';
+import { checkAccess, checkAuth, getPageNumber } from '../middleware/checkAuth';
 import { Appdb } from '../model/appdb';
 import ClaimModel from '../model/dbclaim';
 import HospitalModel from "../model/dbhospital";
@@ -70,7 +70,7 @@ function validateapproveClaim(req: any, res: any, next: any) {
 
 async function signup(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
   try {
-    const user: InsuranceCompany[] | null = await InsuranceCompanyModel.getUserByCriteria({ email: req.body.email }, '');
+    const user: InsuranceCompany[] | null = await InsuranceCompanyModel.getUserByCriteria({ email: req.body.email }, '',getPageNumber(req));
 
     if (!user) {
       const role: string = 'Insurance Company';
@@ -116,13 +116,13 @@ async function addHospitals(req: Request, res: Response): Promise<Response<any, 
     const { email } = req.body;
 
     const insurance_company_id = (req as any).user.user_id;
-    const getHospital = await HospitalModel.getUserByCriteria({ email: email }, '');
+    const getHospital = await HospitalModel.getUserByCriteria({ email: email }, '',getPageNumber(req));
     if (getHospital.length === 0) {
       return res.send(functions.output(500, 'Error in getting Hospital', null));
     }
     const hospital_id: bigint | undefined = getHospital[0]?.hospital_id;
 
-    const alreadyAdded = await HospitalInsuranceModel.getUserByCriteria({ hospital_id: hospital_id, insurance_company_id: insurance_company_id }, '');
+    const alreadyAdded = await HospitalInsuranceModel.getUserByCriteria({ hospital_id: hospital_id, insurance_company_id: insurance_company_id }, '',getPageNumber(req));
 
     if (alreadyAdded.length>0) {
       return res.send(functions.output(500, 'Hospital is already added', alreadyAdded));

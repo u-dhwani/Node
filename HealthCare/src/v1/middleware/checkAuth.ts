@@ -45,8 +45,8 @@ export const checkAccess = (requiredRole: string) => async (req: Request, res: R
   console.log("checkaccess" + (req as any).user.user_id);
 
   if (!user_role || user_role !== requiredRole) {
-     return res.send(functions.output(403, 'UnAuthorized', null));
-   
+    return res.send(functions.output(403, 'UnAuthorized', null));
+
 
   } else {
     // User has the required role, proceed to the next middleware
@@ -69,15 +69,22 @@ export function verifyToken(token: string): any {
 }
 
 
-export function validatepage(req: any, res: any, next: any) {
-
+export function getPageNumber(req: any): number {
   const schema = Joi.object({
-    page: Joi.number().integer().positive().required()
+    page: Joi.number().integer().positive().optional() // Make 'page' optional
   });
 
-  const { error } = schema.validate({ page: req.query.page });
+  const { error, value } = schema.validate({ page: req.query.page });
+  
   if (error) {
-    return res.send(functions.output(400, error.details[0].message, null))
+    throw new Error(error.details[0].message);
   }
-  next();
+
+  if (!value || !value.page) {
+    console.log("Page number not provided, returning default value (1)");
+    return 1; // Return default value if 'page' is not provided
+  }
+
+  console.log("Page number: " + value.page);
+  return value.page;
 }

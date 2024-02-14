@@ -34,7 +34,7 @@ export class Appdb extends db {
 	 * @param orderBy Column to order the results by.
 	 * @returns An array of user records or null if no records found.
 	 */
-	async getUserByCriteria(criteria: Record<string, any>, orderBy: string): Promise<Response<any, Record<string, any>> | any> {
+	async getUserByCriteria(criteria: Record<string, any>, orderBy: string, page: number): Promise<Response<any, Record<string, any>> | any> {
 
 		if (orderBy != '')
 			this.orderby = 'ORDER BY ' + orderBy;
@@ -50,9 +50,11 @@ export class Appdb extends db {
 			});
 		}
 		this.where = whereClause;
-		const result = await this.allRecords('*');
+		this.page = page;
+		this.rpp = 2;
+		const result = await this.listRecords('*');
 		//const result = await this.selectRecord(criteria);
-		return result ;
+		return result;
 	}
 
 
@@ -63,10 +65,10 @@ export class Appdb extends db {
 	* @param conditionField Field to condition the query.
 	* @returns An array of user records or null if no records found.
 	*/
-	async getUsers(id: number, conditionField: string,page:number) {
+	async getUsers(id: number, conditionField: string, page: number) {
 		this.where = "WHERE " + conditionField + "= " + id;
-		this.rpp = 10;
-		this.page=page;
+		this.rpp = 5;
+		this.page = page;
 		const result = await this.listRecords("*");
 		return result;
 	}

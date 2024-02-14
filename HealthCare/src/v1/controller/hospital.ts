@@ -3,7 +3,7 @@ import * as Joi from 'joi';
 import { Functions } from '../library/functions';
 import { validations } from '../library/validations';
 import { signUp, validatesignUpHospital } from '../middleware/UserAuthHandler';
-import { checkAccess, checkAuth, validatepage } from '../middleware/checkAuth';
+import { checkAccess, checkAuth, getPageNumber } from '../middleware/checkAuth';
 import { Appdb } from '../model/appdb';
 import ClaimModel, { Claim } from '../model/dbclaim';
 import DoctorModel, { Doctor } from '../model/dbdoctor';
@@ -25,7 +25,7 @@ const hospitalRouter = express.Router();
 hospitalRouter.post('/signup', validatesignUpHospital, signup);
 hospitalRouter.post('/addDoctor', checkAuth, checkAccess('hospital'), validateaddDoctor, addDoctor);
 hospitalRouter.post('/admit', checkAuth, checkAccess('hospital'), validatepatientAdmit, patientAdmit);
-hospitalRouter.get('/listadmitpatients', checkAuth, checkAccess('hospital'), validatepage, listPatientsAdmitted);
+hospitalRouter.get('/listadmitpatients', checkAuth, checkAccess('hospital'),  listPatientsAdmitted);
 hospitalRouter.post('/patient/product', checkAuth, checkAccess('hospital'), validateaddProductsUsedByPatient, addProductsUsedByPatient);
 hospitalRouter.post('/dischargePatient', checkAuth, checkAccess('hospital'), validatedischargePatient, dischargePatient);
 
@@ -94,7 +94,7 @@ function validatedischargePatient(req: any, res: any, next: any) {
 
 async function signup(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
   try {
-    const user: Hospital[] | null = await HospitalModel.getUserByCriteria({ email: req.body.email }, '');
+    const user: Hospital[] | null = await HospitalModel.getUserByCriteria({ email: req.body.email }, '',getPageNumber(req));
 
     if (!user) {
       const role: string = 'hospital';
@@ -116,7 +116,7 @@ async function patientAdmit(req: Request, res: Response): Promise<Response<any, 
   const { patient_email, doctor_id, insurance_plan_id } = req.body;
 
   const hospital_id = (req as any).user.user_id;
-  const patientExist = await PatientModel.getUserByCriteria({ email: patient_email }, '');
+  const patientExist = await PatientModel.getUserByCriteria({ email: patient_email }, '',getPageNumber(req));
 
   if (patientExist.length === 0) {
     return res.send(functions.output(404, 'Patient not found...Register the patient', null));
@@ -153,7 +153,7 @@ async function patientAdmit(req: Request, res: Response): Promise<Response<any, 
 
     else {
 
-      const getInsuranceCompanyID = await InsurancePlanModel.getUserByCriteria({ insurance_plan_id: insurance_plan_id }, '');
+      const getInsuranceCompanyID = await InsurancePlanModel.getUserByCriteria({ insurance_plan_id: insurance_plan_id }, '',getPageNumber(req));
 
       if (getInsuranceCompanyID.length === 0) {
         return res.send(functions.output(500, 'Error in finding Insurance Company', null));
@@ -197,10 +197,8 @@ async function listPatientsAdmitted(req: Request, res: Response): Promise<Respon
   try {
 
     const hospital_id = (req as any).user.user_id;
-    const page: number = Number(req.query.page) || 1;
-
-
-    const patientAdmitDetails = await PatientAdmitModel.getUsers(hospital_id, 'hospital_id', page);
+   
+    const patientAdmitDetails = await PatientAdmitModel.getUsers(hospital_id, 'hospital_id', getPageNumber(req));
     if (patientAdmitDetails.length === 0) {
       return res.send(functions.output(404, 'Patient Not Found', null));
     }
@@ -216,7 +214,7 @@ async function addProductsUsedByPatient(req: Request, res: Response): Promise<Re
 
   try {
     const { email, product_id, quantity } = req.body;
-    const patientDetails = await PatientModel.getUserByCriteria({ email: email }, '');
+    const patientDetails = await PatientModel.getUserByCriteria({ email: email }, '',getPageNumber(req));
 
     if (patientDetails.length === 0) {
       return res.send(functions.output(404, 'Patient Not Found', null));
@@ -287,7 +285,7 @@ async function dischargePatient(req: Request, res: Response): Promise<Response<a
 
     const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-    const patientAdmit = await PatientAdmitModel.getUserByCriteria({ patient_id: patient_id }, '');
+    const patientAdmit = await PatientAdmitModel.getUserByCriteria({ patient_id: patient_id }, '',getPageNumber(req));
     if (patientAdmit.length === 0) {
       return res.send(functions.output(500, 'Patient not found in Admit', null));
     }
@@ -320,7 +318,7 @@ async function dischargePatient(req: Request, res: Response): Promise<Response<a
         return res.send(functions.output(500, 'Billing Amount not found', null));
       }
 
-      const getUpdatedBillingAmount = await PatientAdmitModel.getUserByCriteria({ patient_admit_id: patient_admit_id }, '');
+      const getUpdatedBillingAmount = await PatientAdmitModel.getUserByCriteria({ patient_admit_id: patient_admit_id }, '',getPageNumber(req));
 
       const updateclaimAmount = await ClaimModel.updateAmountinClaim(patient_admit_id, getUpdatedBillingAmount.billing_amount);
 
@@ -328,7 +326,7 @@ async function dischargePatient(req: Request, res: Response): Promise<Response<a
         return res.send(functions.output(500, 'Claim amount not been updated from admit table', null));
       }
 
-      const getClaimId = await ClaimModel.getUserByCriteria({ admit_id: patient_admit_id }, '');
+      const getClaimId = await ClaimModel.getUserByCriteria({ admit_id: patient_admit_id }, '',getPageNumber(req));
 
       if (getClaimId.length === 0) {
         return res.send(functions.output(500, 'Claim not found', null));
@@ -397,7 +395,7 @@ async function addDoctor(req: Request, res: Response): Promise<Response<any, Rec
     const hospital_id = (req as any).user.user_id;
 
     // Retrieve the doctor's user_id using the provided email
-    const doctors: Doctor[] | null = await DoctorModel.getUserByCriteria({ email: email }, '');
+    const doctors: Doctor[] | null = await DoctorModel.getUserByCriteria({ email: email }, '',getPageNumber(req));
 
     console.log(doctors);
     if (!doctors) {
@@ -413,7 +411,7 @@ async function addDoctor(req: Request, res: Response): Promise<Response<any, Rec
         hospital_id
       }
 
-      const associationAlreadyPresent = await DoctorHospitalModel.getUserByCriteria({ doctor_id: doctors[0].doctor_id, hospital_id: hospital_id }, '');
+      const associationAlreadyPresent = await DoctorHospitalModel.getUserByCriteria({ doctor_id: doctors[0].doctor_id, hospital_id: hospital_id }, '',getPageNumber(req));
       if (associationAlreadyPresent !== null && associationAlreadyPresent.length > 0) {
 
         res.send(functions.output(200, 'Doctor Hospital Association already present', associationAlreadyPresent));

@@ -2,16 +2,13 @@ import express, { Request, Response } from "express";
 import * as Joi from 'joi';
 import { Functions } from '../library/functions';
 import { validations } from '../library/validations';
-import { login, loginSchema, signUp, validatesignUpPatient } from '../middleware/UserAuthHandler';
-import { checkAccess, checkAuth } from '../middleware/checkAuth';
+import { signUp, validatesignUpPatient } from '../middleware/UserAuthHandler';
+import { checkAccess, checkAuth, getPageNumber } from '../middleware/checkAuth';
 import { Appdb } from '../model/appdb';
-import AppointmentModel, { Appointment } from '../model/dbappointment';
-import DoctorAvailabilityModel, { DoctorAvailability } from "../model/dbdoctoravailability";
-import DoctorModel from '../model/dbdoctor';
+import DoctorAvailabilityModel from "../model/dbdoctoravailability";
 import HospitalModel from '../model/dbhospital';
 import PatientModel, { Patient } from '../model/dbpatient';
 import PatientInsuranceModel, { PatientInsurance } from "../model/dbpatientinsurance";
-import { add, nextFriday } from "date-fns";
 const functions = new Functions();
 const appdb = new Appdb();
 
@@ -93,7 +90,7 @@ function validateaddInsurance(req: any, res: any, next: any) {
 
 async function signup(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
   try {
-    const user: Patient[] | null = await PatientModel.getUserByCriteria({ email: req.body.email }, '');
+    const user: Patient[] | null = await PatientModel.getUserByCriteria({ email: req.body.email }, '', getPageNumber(req));
 
     if (!user) {
       const role: string = 'patient';
@@ -152,7 +149,7 @@ async function getAllHospital(req: Request, res: Response): Promise<Response<any
   try {
     const { city, state } = req.body;
 
-    const hospitalDetails = await HospitalModel.getUserByCriteria({ city: city, state: state }, 'hospital_name');
+    const hospitalDetails = await HospitalModel.getUserByCriteria({ city: city, state: state }, 'hospital_name', getPageNumber(req));
 
     if (hospitalDetails.length === 0) {
       return res.send(functions.output(500, 'Error in fetching hospital details', null));
@@ -170,11 +167,7 @@ async function getAllDoctorOfParticularHospital(req: Request, res: Response): Pr
 
     const { hospital_id } = { hospital_id: parseInt(req.params.id, 10) };
 
-
-    // Extract the validated hospital_id
-    //const hospitalId = req.values.hospital_id;
-    //const validatedHospitalId = value.hospital_id;
-    const doctorDetails = await PatientModel.getAllDoctorOfParticularHospital(hospital_id);
+    const doctorDetails = await PatientModel.getAllDoctorOfParticularHospital(hospital_id, getPageNumber(req));
     if (doctorDetails.length === 0) {
       return res.send(functions.output(404, 'Error in fetching doctor of particular hospital', null));
     }
@@ -190,7 +183,7 @@ async function getAllDoctorOfParticularHospital(req: Request, res: Response): Pr
 
 async function availableTimeOfDoctor(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
   const { doctor_id, hospital_id } = req.body;
-  const doctorTimeDetails = await DoctorAvailabilityModel.getUserByCriteria({ doctor_id: doctor_id, hospital_id: hospital_id }, '');
+  const doctorTimeDetails = await DoctorAvailabilityModel.getUserByCriteria({ doctor_id: doctor_id, hospital_id: hospital_id }, '', getPageNumber(req));
 
   if (doctorTimeDetails.length === 0) {
     return res.send(functions.output(500, 'No doctor found working in this hospital', null));

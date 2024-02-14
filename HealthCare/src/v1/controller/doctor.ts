@@ -3,7 +3,7 @@ import * as Joi from 'joi';
 import { Functions } from '../library/functions';
 import { validations } from '../library/validations';
 import { signUp, validatesignUpDoctor } from '../middleware/UserAuthHandler';
-import { checkAccess, checkAuth,validatepage } from '../middleware/checkAuth';
+import { checkAccess, checkAuth, getPageNumber } from '../middleware/checkAuth';
 import { Appdb } from '../model/appdb';
 import AppointmentModel from '../model/dbappointment';
 import DoctorModel, { Doctor } from '../model/dbdoctor';
@@ -15,7 +15,7 @@ const appdb = new Appdb();
 const doctorRouter = express.Router();
 
 doctorRouter.post('/signup', validatesignUpDoctor, signup);
-doctorRouter.get('/patients', checkAuth, checkAccess('doctor'), validatepage, allPatientOfParticularDoctor);
+doctorRouter.get('/patients', checkAuth, checkAccess('doctor'),  allPatientOfParticularDoctor);
 doctorRouter.post('/addSchedule', checkAuth, checkAccess('doctor'), validateaddSchedule, addSchedule);
 doctorRouter.get('/income', checkAuth, checkAccess('doctor'), validateincomeOfThatDay, incomeOfThatDay);
 doctorRouter.put('/updateDoctorAvailability', checkAuth, checkAccess('doctor'), validateupdateDoctorAvailability, updateDoctorAvailability);
@@ -96,7 +96,7 @@ function validateincomeOfThatDay(req: any, res: any, next: any) {
 
 async function signup(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
   try {
-    const user: Doctor[] | null = await DoctorModel.getUserByCriteria({ email: req.body.email }, '');
+    const user: Doctor[] | null = await DoctorModel.getUserByCriteria({ email: req.body.email }, '', getPageNumber(req));
     console.log(user);
     if (!user) {
       const role: string = 'doctor';
@@ -125,7 +125,7 @@ async function addSchedule(req: Request, res: Response): Promise<Response<any, R
     days
   }
 
-  const alreadyPresent = await DoctorAvailabilityModel.getUserByCriteria({ doctor_id: doctor_id, hospital_id: hospital_id, days: days }, '');
+  const alreadyPresent = await DoctorAvailabilityModel.getUserByCriteria({ doctor_id: doctor_id, hospital_id: hospital_id, days: days }, '', getPageNumber(req));
 
   if (alreadyPresent.length > 0) {
     return res.send(functions.output(500, 'Already schedule is present...If you want to change the time, update it', null));
@@ -161,9 +161,8 @@ async function allPatientOfParticularDoctor(req: Request, res: Response): Promis
   try {
 
     const doctor_id = (req as any).user.user_id;
-    const page: number = Number(req.query.page) || 1;
-
-    const patientDetails = await DoctorModel.allPatientOfParticularDoctor(doctor_id, page);
+    
+    const patientDetails = await DoctorModel.allPatientOfParticularDoctor(doctor_id, getPageNumber(req));
     if (patientDetails.length === 0) {
       return res.send(functions.output(404, 'Patients not found', null));
     }

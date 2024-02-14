@@ -31,12 +31,13 @@ class PatientModel extends Appdb {
  */
 
 
-  async getAllDoctorOfParticularHospital(hospital_id: number): Promise<any> {
+  async getAllDoctorOfParticularHospital(hospital_id: number,page:number): Promise<any> {
 
     const selectFields = "d.speciality, json_agg(json_build_object('first_name', d.first_name, 'last_name', d.last_name, 'gender', d.gender,'phone_number', d.phone_number, 'email', d.email, 'fees', d.fees)) as doctors";
     this.table = "doctorhospital dh JOIN doctor d ON dh.doctor_id = d.doctor_id";
     this.where = "WHERE dh.hospital_id = " + hospital_id + " GROUP BY d.speciality ORDER BY d.speciality, MIN(d.fees) ";
     this.rpp = 10;
+    this.page=page;
     //  const result = await this.select(fromTable, selectFields, whereCondition, '', limitCondition);
     const result = await this.listRecords(selectFields);
     return result;

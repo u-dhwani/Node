@@ -4,7 +4,7 @@ import * as Joi from 'joi';
 import { Functions } from '../library/functions';
 import { validations } from '../library/validations';
 import { signUp, validatesignUpAdmin } from '../middleware/UserAuthHandler';
-import { checkAccess, checkAuth } from '../middleware/checkAuth';
+import { checkAccess, checkAuth, getPageNumber } from '../middleware/checkAuth';
 import { Appdb } from '../model/appdb';
 import AdminModel, { Admin } from '../model/dbadmin';
 
@@ -40,7 +40,7 @@ function validatecountOfDisease(req: any, res: any, next: any) {
 
 async function signup(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
   try {
-    const user: Admin[] | null = await AdminModel.getUserByCriteria({ email: req.body.email }, '');
+    const user: Admin[] | null = await AdminModel.getUserByCriteria({ email: req.body.email }, '', getPageNumber(req));
 
     if (!user) {
       const role: string = 'admin';
