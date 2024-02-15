@@ -96,9 +96,9 @@ function validateincomeOfThatDay(req: any, res: any, next: any) {
 
 async function signup(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
   try {
-    const user: Doctor[] | null = await DoctorModel.getUserByCriteria({ email: req.body.email }, '', getPageNumber(req));
+    const user: Doctor[] = await DoctorModel.getUserByCriteria({ email: req.body.email }, '', getPageNumber(req));
     console.log(user);
-    if (!user) {
+    if (user.length===0) {
       const role: string = 'doctor';
       return signUp(req, res, role);
     }
@@ -142,7 +142,7 @@ async function addSchedule(req: Request, res: Response): Promise<Response<any, R
 }
 async function updateDoctorAvailability(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
   try {
-    const { doctor_id } = (req as any).user.user_id;
+    const doctor_id  = (req as any).user.user_id;
     const { hospital_id, days, start_time, end_time } = req.body;
 
     const updateAvailabilityDetails = await DoctorAvailabilityModel.updateDoctorAvailability(doctor_id, hospital_id, start_time, end_time, days);

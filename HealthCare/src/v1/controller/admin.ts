@@ -7,6 +7,7 @@ import { signUp, validatesignUpAdmin } from '../middleware/UserAuthHandler';
 import { checkAccess, checkAuth, getPageNumber } from '../middleware/checkAuth';
 import { Appdb } from '../model/appdb';
 import AdminModel, { Admin } from '../model/dbadmin';
+import { start } from "repl";
 
 const functions = new Functions();
 const appdb = new Appdb();
@@ -26,6 +27,8 @@ function validatecountOfDisease(req: any, res: any, next: any) {
 
   const schema = Joi.object({
     disease_name: Joi.string().trim().min(1).required(),
+    start_date: Joi.date().iso().required(),
+    end_date: Joi.date().iso().required()
 
   });
 
@@ -40,9 +43,9 @@ function validatecountOfDisease(req: any, res: any, next: any) {
 
 async function signup(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
   try {
-    const user: Admin[] | null = await AdminModel.getUserByCriteria({ email: req.body.email }, '', getPageNumber(req));
+    const user: Admin[]  = await AdminModel.getUserByCriteria({ email: req.body.email }, '', getPageNumber(req));
 
-    if (!user) {
+    if (user.length===0) {
       const role: string = 'admin';
       return signUp(req, res, role);
     }
@@ -83,11 +86,14 @@ async function topTenPatientsMaxClaim(req: Request, res: Response): Promise<Resp
 async function countOfDisease(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
   try {
 
-    const { disease_name } = req.body;
+    const { disease_name,start_date,end_date } = req.body;
     const lowercasedDiseaseName = disease_name.toLowerCase();
 
+    const formattedstartDate = new Date(start_date).toISOString().split('T')[0];
+    const formattedendDate=new Date(end_date).toISOString().split('T')[0];
 
-    const diseaseDetails = await AdminModel.countOfThatDisease(lowercasedDiseaseName);
+
+    const diseaseDetails = await AdminModel.countOfThatDisease(lowercasedDiseaseName,formattedstartDate,formattedendDate);
     if (!diseaseDetails) {
       return res.send(functions.output(404, 'Disease not found', null));
     }

@@ -24,14 +24,14 @@ class AdminModel extends Appdb {
   }
 
   /**
-  * Retrieves the count of patients related to a specific disease.
+  * Retrieves the count of patients related to a specific disease from start date to end date.
   * @param disease_name The name of the disease to count  for.
   * @returns The count of specified disease.
   */
 
-  async countOfThatDisease(disease_name: string): Promise<any> {
+  async countOfThatDisease(disease_name: string, start_date: string, end_date: string): Promise<any> {
 
-    const whereCondition = "WHERE LOWER(disease) LIKE '%" + disease_name + "%'";
+    const whereCondition = "WHERE LOWER(disease) LIKE '%" + disease_name + "%' AND appointment_date BETWEEN '" + start_date + "' AND '" + end_date + "'";
     const result = await this.selectCount('appointment', '*', whereCondition);
     return result;
 

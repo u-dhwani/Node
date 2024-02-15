@@ -51,7 +51,7 @@ export class Appdb extends db {
 		}
 		this.where = whereClause;
 		this.page = page;
-		this.rpp = 2;
+		this.rpp = 1;
 		const result = await this.listRecords('*');
 		//const result = await this.selectRecord(criteria);
 		return result;

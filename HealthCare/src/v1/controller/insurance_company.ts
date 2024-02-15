@@ -70,9 +70,9 @@ function validateapproveClaim(req: any, res: any, next: any) {
 
 async function signup(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
   try {
-    const user: InsuranceCompany[] | null = await InsuranceCompanyModel.getUserByCriteria({ email: req.body.email }, '',getPageNumber(req));
+    const user: InsuranceCompany[] = await InsuranceCompanyModel.getUserByCriteria({ email: req.body.email }, '', getPageNumber(req));
 
-    if (!user) {
+    if (user.length === 0) {
       const role: string = 'Insurance Company';
       return signUp(req, res, role);
     }
@@ -116,15 +116,15 @@ async function addHospitals(req: Request, res: Response): Promise<Response<any, 
     const { email } = req.body;
 
     const insurance_company_id = (req as any).user.user_id;
-    const getHospital = await HospitalModel.getUserByCriteria({ email: email }, '',getPageNumber(req));
+    const getHospital = await HospitalModel.getUserByCriteria({ email: email }, '', getPageNumber(req));
     if (getHospital.length === 0) {
       return res.send(functions.output(500, 'Error in getting Hospital', null));
     }
     const hospital_id: bigint | undefined = getHospital[0]?.hospital_id;
 
-    const alreadyAdded = await HospitalInsuranceModel.getUserByCriteria({ hospital_id: hospital_id, insurance_company_id: insurance_company_id }, '',getPageNumber(req));
+    const alreadyAdded = await HospitalInsuranceModel.getUserByCriteria({ hospital_id: hospital_id, insurance_company_id: insurance_company_id }, '', getPageNumber(req));
 
-    if (alreadyAdded.length>0) {
+    if (alreadyAdded.length > 0) {
       return res.send(functions.output(500, 'Hospital is already added', alreadyAdded));
     }
 

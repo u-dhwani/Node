@@ -161,6 +161,7 @@ export async function signUp(req: Request, res: Response, role: string): Promise
           fees: req.body.fees,
         } as Doctor;
         userQuery = await DoctorModel.insertRecord(newUser);
+        console.log(userQuery);
         break;
 
       case 'admin':
@@ -181,6 +182,7 @@ export async function signUp(req: Request, res: Response, role: string): Promise
           phone_number: req.body.phone_number,
         } as InsuranceCompany;
         userQuery = await InsuranceCompanyModel.insertRecord(newUser);
+
         break;
 
 
@@ -188,8 +190,10 @@ export async function signUp(req: Request, res: Response, role: string): Promise
         return res.send(functions.output(500, 'Invalid role specified', null));
     }
 
-    const token = generateToken({ email: req.body.email, role, user_id: userQuery.data });
-    return res.send(functions.output(200, 'SignUp Successfule', token));
+    //const token = generateToken({ email: req.body.email, role, user_id: userQuery[findUserByTableID] });
+   
+    const token = generateToken({ email: req.body.email, role, user_id: userQuery});
+    return res.send(functions.output(200, 'SignUp Successful', token));
 
   } catch (error) {
     console.error('Error in signup:', error);
@@ -239,7 +243,7 @@ export async function login(req: Request, res: Response): Promise<Response<any, 
     }
 
 
-    const user: any = await userModel.getUserByCriteria({ email: email }, '',getPageNumber(req));
+    const user: any = await userModel.getUserByCriteria({ email: email }, '', getPageNumber(req));
 
     console.log('User:', user);
 

@@ -90,9 +90,9 @@ function validateaddInsurance(req: any, res: any, next: any) {
 
 async function signup(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
   try {
-    const user: Patient[] | null = await PatientModel.getUserByCriteria({ email: req.body.email }, '', getPageNumber(req));
+    const user: Patient[] = await PatientModel.getUserByCriteria({ email: req.body.email }, '', getPageNumber(req));
 
-    if (!user) {
+    if (user.length === 0) {
       const role: string = 'patient';
       return signUp(req, res, role);
     }
