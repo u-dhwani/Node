@@ -1,7 +1,11 @@
 const config = {
     bap_id: 'example-bap.com',
     unique_key_id: 'bap1234',
-    sign_private_key: 'cjbhP0PFyrlSCNszJM1F/YmHDVAWsZqJUPzojnE/7TJU3fJ/rmIlgaUHEr5E0/2PIyf0tpSnWtT6cyNNlpmoAQ=='
+    sign_private_key: 'UfVQdUBF9pX1KoHE+6Q+m9RrX3QTM5RYpfSBju5a0bAveYdmYeSsS4F6jKHdV0/tYpPzbiq6In+R07pr5W9HRw=='
 };
+
+
+
+
 
 module.exports = { config };

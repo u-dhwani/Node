@@ -1,12 +1,11 @@
 const express = require('express');
 const fetch = require('node-fetch');
-const { createSigningString, signMessage, createAuthorizationHeader } = require("./cryptoUtils");
+const { createSigningString, signMessage, createAuthorizationHeader, createKeyPair } = require("./cryptoUtils");
 const { config } = require("./config");
 
 const app = express();
 app.use(express.json());
 
-const url = 'http://localhost:4000/receive-message'; // Assuming receiver's server is running at this URL
 
 app.post('/send-message', async (req, res) => {
     try {
@@ -24,31 +23,8 @@ app.post('/send-message', async (req, res) => {
         console.log("auth:", authorizationHeader);
         // Make a POST request with the message and authorization header to the receiver
 
-        res.status(500).json({ Authorization: authorizationHeader});
-        // const response = await fetch(url, {
-        //     method: 'POST',
-        //     body: JSON.stringify(message),
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //         'Authorization': authorizationHeader
-        //     }
-        // });
+        res.status(500).json({ Authorization: authorizationHeader });
 
-
-        // if (response.ok) {
-        //     // Extract response data
-        //     const responseData = await response.json();
-
-        //     // Log the response data
-        //     console.log('Response Data:', responseData);
-
-        //     // Send the response received from the receiver back to the client (Postman)
-        //     res.status(response.status).json(responseData);
-        // } else {
-        //     // Handle the case where the server responds with an error
-        //     console.error('Error:', response.statusText);
-        //     res.status(response.status).json({ error: response.statusText });
-        // }
     } catch (error) {
         console.error('Error:', error);
         res.status(500).json({ error: 'Internal server error' });
