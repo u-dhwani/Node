@@ -11,12 +11,6 @@ app.post('/send-message', async (req, res) => {
     try {
         const message = req.body.message; // Assuming the message body is sent in the request body
 
-        // Create the signing string
-        const { signing_string, expires, created } = await createSigningString(JSON.stringify(message));
-
-        // Sign the message
-        const signature = await signMessage(signing_string, config.sign_private_key);
-
         // Construct the authorization header
         const authorizationHeader = await createAuthorizationHeader(message);
 

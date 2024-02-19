@@ -27,7 +27,6 @@ const createSigningString = async (message, created, expires) => {
 
 const signMessage = async (signing_string, privateKey) => {
 
-
     await sodium.ready;
     const signedMessage = sodium.crypto_sign_detached(signing_string, sodium.from_base64(privateKey, base64_variants.ORIGINAL));
     return sodium.to_base64(signedMessage, base64_variants.ORIGINAL);
@@ -112,8 +111,6 @@ async function verifyAuthorizationHeader(authorizationHeader, message) {
 
         // Look up the public key using subscriberId and uniqueKeyId
         const publicKey = 'L3mHZmHkrEuBeoyh3VdP7WKT824quiJ/kdO6a+VvR0c=';
-
-
 
         // Verify the header using the retrieved public key
         return await verifyHeader(authorizationHeader, message, publicKey);
