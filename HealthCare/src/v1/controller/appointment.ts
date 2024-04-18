@@ -15,46 +15,14 @@ const appdb = new Appdb();
 
 const appointmentRouter = express.Router();
 
-appointmentRouter.post('/patient/addappointment', checkAuth, checkAccess('patient'), validatePatientAppointment, appointment);
-appointmentRouter.post('/hospital/addappointment', checkAuth, checkAccess('hospital'), validateHospitalAppointment, appointment);
-appointmentRouter.put('/doctor/updateAppointment', checkAuth, checkAccess('doctor'), validateUpdateAppointment, updateAppointment);
+appointmentRouter.post('/patient/addappointment', checkAuth, checkAccess('patient'),
+                      validatePatientAppointment, appointment);
+appointmentRouter.post('/hospital/addappointment', checkAuth, checkAccess('hospital'), 
+                      validateHospitalAppointment, appointment);
+appointmentRouter.put('/doctor/updateAppointment', checkAuth, checkAccess('doctor'),
+                      validateUpdateAppointment, updateAppointment);
 appointmentRouter.get('/doctor/todaysAppointment', checkAuth, checkAccess('doctor'), todaysAppointment);
-
-
-
 export default appointmentRouter;
-
-function validateUpdateAppointment(req: any, res: any, next: any) {
-
-  const schema = Joi.object({
-    appointment_id: Joi.number().integer().min(1).required(),
-    appointment_fee: Joi.number().precision(2).min(0).required(),
-    Disease: Joi.string().max(255).required(),
-    appointment_status: Joi.string().valid('Scheduled', 'Completed', 'Cancelled').required(),
-  });
-
-  let validationsObj = new validations();
-  if (!validationsObj.validateRequest(req, res, next, schema)) {
-    return false;
-  }
-}
-
-function validatePatientAppointment(req: any, res: any, next: any) {
-
-  const schema = Joi.object({
-    doctor_id: Joi.number().integer().positive().required(),
-    hospital_id: Joi.number().integer().positive().required(),
-    // appointment_date: Joi.date().min('now').max('now + 7 days') 
-    appointment_date: Joi.date().iso().required(),
-    appointment_time: Joi.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/),
-    appointment_status: Joi.string().valid('Scheduled', 'Cancelled', 'Completed').required()
-  });
-
-  let validationsObj = new validations();
-  if (!validationsObj.validateRequest(req, res, next, schema)) {
-    return false;
-  }
-}
 
 function validateHospitalAppointment(req: any, res: any, next: any) {
 
@@ -70,52 +38,6 @@ function validateHospitalAppointment(req: any, res: any, next: any) {
   let validationsObj = new validations();
   if (!validationsObj.validateRequest(req, res, next, schema)) {
     return false;
-  }
-}
-
-
-async function todaysAppointment(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
-  try {
-    const doctor_id = (req as any).user.user_id;
-
-    const today = new Date();
-    const formattedDate = today.toISOString().split('T')[0];
-
-    const PatientDetails = await AppointmentModel.getUserByCriteria({ appointment_date: formattedDate, doctor_id: doctor_id }, 'appointment_time', getPageNumber(req));
-
-    if (PatientDetails.length === 0) {
-      return res.send(functions.output(404, 'Patients not found', null));
-    }
-
-    return res.send(functions.output(200, 'Hospital details retrieved successfully', PatientDetails));
-
-  } catch (error) {
-    console.error('Error in retrieving doctor details:', error);
-    return res.send(functions.output(500, 'Internal Server Error', null));
-  }
-}
-
-async function updateAppointment(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
-  try {
-    const { appointment_id, appointment_fee, Disease, appointment_status } = req.body;
-
-    const appointmentData = {
-      appointment_fee,
-      Disease,
-      appointment_status
-    };
-
-
-    const result = await AppointmentModel.updateRecord(appointment_id, appointmentData);
-    if (!result) {
-      return res.send(functions.output(404, 'Appointment Not Found', null));
-
-    }
-
-    return res.send(functions.output(200, 'Appointment updated successfully', result));
-  } catch (error) {
-    console.error('Error updating appointment:', error);
-    return res.send(functions.output(500, 'Internal Server Error', null));
   }
 }
 
@@ -190,4 +112,86 @@ async function appointment(req: Request, res: Response): Promise<Response<any, R
     return res.send(functions.output(500, 'Internal Server Error', null));
   }
 }
+
+function validateUpdateAppointment(req: any, res: any, next: any) {
+
+  const schema = Joi.object({
+    appointment_id: Joi.number().integer().min(1).required(),
+    appointment_fee: Joi.number().precision(2).min(0).required(),
+    Disease: Joi.string().max(255).required(),
+    appointment_status: Joi.string().valid('Scheduled', 'Completed', 'Cancelled').required(),
+  });
+
+  let validationsObj = new validations();
+  if (!validationsObj.validateRequest(req, res, next, schema)) {
+    return false;
+  }
+}
+
+function validatePatientAppointment(req: any, res: any, next: any) {
+
+  const schema = Joi.object({
+    doctor_id: Joi.number().integer().positive().required(),
+    hospital_id: Joi.number().integer().positive().required(),
+    // appointment_date: Joi.date().min('now').max('now + 7 days') 
+    appointment_date: Joi.date().iso().required(),
+    appointment_time: Joi.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/),
+    appointment_status: Joi.string().valid('Scheduled', 'Cancelled', 'Completed').required()
+  });
+
+  let validationsObj = new validations();
+  if (!validationsObj.validateRequest(req, res, next, schema)) {
+    return false;
+  }
+}
+
+
+
+
+async function todaysAppointment(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
+  try {
+    const doctor_id = (req as any).user.user_id;
+
+    const today = new Date();
+    const formattedDate = today.toISOString().split('T')[0];
+
+    const PatientDetails = await AppointmentModel.getUserByCriteria({ appointment_date: formattedDate, doctor_id: doctor_id }, 'appointment_time', getPageNumber(req));
+
+    if (PatientDetails.length === 0) {
+      return res.send(functions.output(404, 'Patients not found', null));
+    }
+
+    return res.send(functions.output(200, 'Hospital details retrieved successfully', PatientDetails));
+
+  } catch (error) {
+    console.error('Error in retrieving doctor details:', error);
+    return res.send(functions.output(500, 'Internal Server Error', null));
+  }
+}
+
+async function updateAppointment(req: Request, res: Response): Promise<Response<any, Record<string, any>> | any> {
+  try {
+    const { appointment_id, appointment_fee, Disease, appointment_status } = req.body;
+
+    const appointmentData = {
+      appointment_fee,
+      Disease,
+      appointment_status
+    };
+
+
+    const result = await AppointmentModel.updateRecord(appointment_id, appointmentData);
+    if (!result) {
+      return res.send(functions.output(404, 'Appointment Not Found', null));
+
+    }
+
+    return res.send(functions.output(200, 'Appointment updated successfully', result));
+  } catch (error) {
+    console.error('Error updating appointment:', error);
+    return res.send(functions.output(500, 'Internal Server Error', null));
+  }
+}
+
+
 
