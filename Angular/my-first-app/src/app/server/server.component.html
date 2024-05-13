@@ -1,2 +1,6 @@
 <h2> The Server Component </h2>
-<p> {{'Server'}} with ID : {{ serverId }} is {{getServerStatus()}}</p>
+<p [ngStyle]="{backgroundColor : getColor()}" 
+    [ngClass]="{online: serverStatus === 'online'}"> 
+    <!-- Property Binding - Javascript object -->
+    {{'Server'}} with ID : {{ serverId }} is {{getServerStatus()}}
+</p>

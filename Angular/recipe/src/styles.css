@@ -1,0 +1,34 @@
+/* You can add global styles to this file, and also import other style files */
+/* style.css */
+
+/* Customize the background color and text color of the navigation bar */
+.navbar-default {
+    background-color: #337ab7; /* Bootstrap default blue color */
+    color: #fff; /* White text color */
+}
+
+/* Style the brand/logo text */
+.navbar-default .navbar-brand {
+    font-size: 1.5em; /* Larger font size */
+    font-weight: bold; /* Bold font weight */
+}
+
+/* Style the navigation links */
+.navbar-default .navbar-nav > li > a {
+    color: #fff; /* White text color */
+}
+
+/* Style the dropdown menu */
+.navbar-default .dropdown-menu {
+    background-color: #337ab7; /* Match the background color of the navigation bar */
+}
+
+/* Style the links in the dropdown menu */
+.navbar-default .dropdown-menu li > a {
+    color: #fff; /* White text color */
+}
+
+/* Hover effect for links in the dropdown menu */
+.navbar-default .dropdown-menu li > a:hover {
+    background-color: #23527c; /* Darker blue color on hover */
+}
